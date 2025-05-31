@@ -317,31 +317,31 @@ void AP_Mission::update()
 
     update_exit_position();
 
-    // mission_change events
-    if (_last_change_time_prev_ms != _last_change_time_ms) {
-        _last_change_time_prev_ms = _last_change_time_ms;
-        on_mission_timestamp_change();
+    Mission_Command cmd;
+    if (!get_next_cmd(AP_MISSION_FIRST_REAL_COMMAND, cmd, true)) {
+        complete();
+        return;
     }
 
-    // save persistent waypoint_num for watchdog restore
-    hal.util->persistent_data.waypoint_num = _nav_cmd.index;
-
-    // check if we have an active nav command
-    if (!_flags.nav_cmd_loaded || _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
-        // advance in mission if no active nav command
-        if (!advance_current_nav_cmd()) {
-            // failure to advance nav command means mission has completed
-            complete();
-            return;
+    if (is_nav_cmd(cmd)) {
+        if (!_flags.nav_cmd_loaded) {        
+            _nav_cmd = cmd;
+            start_command(_nav_cmd);
+            _flags.nav_cmd_loaded = true;
         }
     } else {
-        // run the active nav command
+        if (!_flags.do_cmd_loaded) {
+            _do_cmd = cmd;
+            start_command(_do_cmd);
+            _flags.do_cmd_loaded = true;
+        }
+    }
+
+    // check if we have an active nav command
+    if (_flags.nav_cmd_loaded) {
         if (verify_command(_nav_cmd)) {
-            // market _nav_cmd as complete (it will be started on the next iteration)
             _flags.nav_cmd_loaded = false;
-            // immediately advance to the next mission command
-            if (!pop_cmd() || !advance_current_nav_cmd(AP_MISSION_FIRST_REAL_COMMAND)) {
-                // failure to advance nav command means mission has completed
+            if (!pop_cmd()) {
                 complete();
                 return;
             }
@@ -349,13 +349,13 @@ void AP_Mission::update()
     }
 
     // check if we have an active do command
-    if (!_flags.do_cmd_loaded) {
-        advance_current_do_cmd();
-    } else {
-        // check the active do command
+    if (_flags.do_cmd_loaded) {
         if (verify_command(_do_cmd)) {
-            // mark _do_cmd as complete
             _flags.do_cmd_loaded = false;
+            if (!pop_cmd()) {
+                complete();
+                return;
+            }
         }
     }
 }

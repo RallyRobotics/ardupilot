@@ -56,7 +56,7 @@ void ModeAuto::update()
         Location loc;
         if (ahrs.get_origin(loc)) {
             // start/resume the mission (based on MIS_RESTART parameter)
-            mission.start_or_resume();
+            mission.start();
             waiting_to_start = false;
         }
     } else {
