@@ -291,6 +291,7 @@ bool AP_Mission::clear()
     _flags.nav_cmd_loaded = false;
     _flags.do_cmd_loaded = false;
     _flags.state = MISSION_STOPPED;
+    _popped = 0;
     // return success
     return true;
 }
@@ -339,7 +340,7 @@ void AP_Mission::update()
             // market _nav_cmd as complete (it will be started on the next iteration)
             _flags.nav_cmd_loaded = false;
             // immediately advance to the next mission command
-            if (!advance_current_nav_cmd()) {
+            if (!pop_cmd() || !advance_current_nav_cmd(AP_MISSION_FIRST_REAL_COMMAND)) {
                 // failure to advance nav command means mission has completed
                 complete();
                 return;
@@ -516,6 +517,7 @@ bool AP_Mission::add_cmd(Mission_Command& cmd)
 ///     returns true if successfully replaced, false on failure
 bool AP_Mission::replace_cmd(uint16_t index, const Mission_Command& cmd)
 {
+
     // sanity check index
     if (index >= (unsigned)_cmd_total) {
         return false;
@@ -976,6 +978,37 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
     // return success
     return true;
 }
+
+bool AP_Mission::pop_cmd() {
+
+    WITH_SEMAPHORE(_rsem);
+
+    const uint16_t total = _cmd_total;
+    // if there are no commands left, nothing to pop
+    if (total <= AP_MISSION_FIRST_REAL_COMMAND) {
+        return false;
+    }
+
+    const uint16_t record_size = AP_MISSION_EEPROM_COMMAND_SIZE;
+
+    // slide commands [1…total−1] down to [0…total−2]
+    for (uint16_t i = AP_MISSION_FIRST_REAL_COMMAND; i + 1 < total; ++i) {
+        const uint16_t src = 4 + ((i + 1) * record_size);
+        const uint16_t dst = 4 + (i * record_size);
+        uint8_t buf[record_size];
+        _storage.read_block(buf, src, record_size);
+        _storage.write_block(dst, buf, record_size);
+    }
+
+    // drop the final slot by decrementing command count
+    _cmd_total.set_and_save(total - 1);
+
+    _last_change_time_ms = AP_HAL::millis();
+    _popped++;
+    return true;   // we did pop one
+}
+
+
 
 /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
 ///     home is taken directly from ahrs

@@ -658,9 +658,9 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
 // current mission state.
 MISSION_STATE GCS_MAVLINK::mission_state(const AP_Mission &mission) const
 {
-    if (mission.num_commands() < 2) {  // 1 means just home is present
-        return MISSION_STATE_NO_MISSION;
-    }
+    // if (mission.num_commands() < 2) {  // 1 means just home is present
+    //     return MISSION_STATE_NO_MISSION;
+    // }
     switch (mission.state()) {
     case AP_Mission::mission_state::MISSION_STOPPED:
         return MISSION_STATE_NOT_STARTED;
@@ -5678,7 +5678,7 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
         AP_Mission *mission = AP::mission();
         if (mission != nullptr) {
-            send_mission_current(*mission, mission->get_current_nav_index());
+            send_mission_current(*mission, mission->pop_count());
         }
         break;
     }

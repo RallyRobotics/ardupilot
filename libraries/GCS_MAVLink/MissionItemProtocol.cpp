@@ -101,7 +101,9 @@ void MissionItemProtocol::handle_mission_count(
         return;
     }
 
-    truncate(packet);
+    if (packet.count != 1) {
+        truncate(packet);
+    }
 
     if (packet.count == 0) {
         // no requests to send...
@@ -286,14 +288,16 @@ void MissionItemProtocol::handle_mission_item(const mavlink_message_t &msg, cons
     }
 
     const uint16_t _item_count = item_count();
+    const bool _append_mode = request_last == 0 && cmd.seq == 0;
 
     MAV_MISSION_RESULT result;
-    if (cmd.seq < _item_count) {
-        // command index is within the existing list, replace the command
-        result = replace_item(cmd);
-    } else if (cmd.seq == _item_count) {
+
+    if (cmd.seq == _item_count || _append_mode) {
         // command is at the end of command list, add the command
         result = append_item(cmd);
+    } else if (cmd.seq < _item_count) {
+        // command index is within the existing list, replace the command
+        result = replace_item(cmd);
     } else {
         // beyond the end of the command list, return an error
         result = MAV_MISSION_ERROR;

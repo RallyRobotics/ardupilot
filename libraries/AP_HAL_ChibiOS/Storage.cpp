@@ -240,7 +240,7 @@ void Storage::write_block(uint16_t loc, const void *src, size_t n)
         _storage_open();
         WITH_SEMAPHORE(sem);
         memcpy(&_buffer[loc], src, n);
-        _mark_dirty(loc, n);
+        // _mark_dirty(loc, n);
     }
 }
 

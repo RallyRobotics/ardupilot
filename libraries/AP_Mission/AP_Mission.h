@@ -506,6 +506,11 @@ public:
     uint16_t num_commands_max() const {
         return _commands_max;
     }
+    
+    uint16_t pop_count() const
+    {
+        return _popped;
+    }
 
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
@@ -540,6 +545,8 @@ public:
     ///
     /// public command methods
     ///
+
+    bool pop_cmd();
 
     /// add_cmd - adds a command to the end of the command list and writes to storage
     ///     returns true if successfully added, false on failure
@@ -918,6 +925,7 @@ private:
 
     // maximum number of commands that will fit in storage
     uint16_t _commands_max;
+    uint16_t _popped;
 
 #if AP_SDCARD_STORAGE_ENABLED
     bool _failed_sdcard_storage;
