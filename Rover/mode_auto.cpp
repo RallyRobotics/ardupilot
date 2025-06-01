@@ -5,10 +5,10 @@
 bool ModeAuto::_enter()
 {
     // fail to enter auto if no mission commands
-    if (mission.num_commands() <= 1) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
-        return false;
-    }
+    // if (mission.num_commands() <= 1) {
+    //     gcs().send_text(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
+    //     return false;
+    // }
 
     // initialise waypoint navigation library
     g2.wp_nav.init();

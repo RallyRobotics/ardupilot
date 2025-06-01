@@ -113,10 +113,10 @@ void AP_Mission::start()
     reset(); // reset mission to the first command, resets jump tracking
 
     // advance to the first command
-    if (!advance_current_nav_cmd()) {
-        // on failure set mission complete
-        complete();
-    }
+    // if (!advance_current_nav_cmd()) {
+    //     // on failure set mission complete
+    //     complete();
+    // }
 }
 
 /// stop - stops mission execution.  subsequent calls to update() will have no effect until the mission is started or resumed
@@ -310,52 +310,18 @@ void AP_Mission::truncate(uint16_t index)
 ///     should be called at 10hz or higher
 void AP_Mission::update()
 {
-    // exit immediately if not running or no mission commands
-    if (_flags.state != MISSION_RUNNING || _cmd_total == 0) {
-        return;
-    }
-
-    update_exit_position();
-
     Mission_Command cmd;
     if (!get_next_cmd(AP_MISSION_FIRST_REAL_COMMAND, cmd, true)) {
-        complete();
         return;
     }
-
-    if (is_nav_cmd(cmd)) {
-        if (!_flags.nav_cmd_loaded) {        
-            _nav_cmd = cmd;
-            start_command(_nav_cmd);
+    if (!_flags.nav_cmd_loaded) {
+        if (start_command(cmd)) {
             _flags.nav_cmd_loaded = true;
         }
-    } else {
-        if (!_flags.do_cmd_loaded) {
-            _do_cmd = cmd;
-            start_command(_do_cmd);
-            _flags.do_cmd_loaded = true;
-        }
-    }
-
-    // check if we have an active nav command
-    if (_flags.nav_cmd_loaded) {
-        if (verify_command(_nav_cmd)) {
+    } else {        
+        if (verify_command(cmd)) {
+            pop_cmd();
             _flags.nav_cmd_loaded = false;
-            if (!pop_cmd()) {
-                complete();
-                return;
-            }
-        }
-    }
-
-    // check if we have an active do command
-    if (_flags.do_cmd_loaded) {
-        if (verify_command(_do_cmd)) {
-            _flags.do_cmd_loaded = false;
-            if (!pop_cmd()) {
-                complete();
-                return;
-            }
         }
     }
 }
@@ -547,6 +513,9 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
         // get next command
         if (!get_next_cmd(cmd_index, cmd, false)) {
             // no more commands so return failure
+            return false;
+        }
+        if (cmd_index == start_index && cmd.id == MAV_CMD_DO_SET_REVERSE) {
             return false;
         }
         // if found a "navigation" command then return it
