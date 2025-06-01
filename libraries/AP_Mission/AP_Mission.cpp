@@ -113,10 +113,16 @@ void AP_Mission::start()
     reset(); // reset mission to the first command, resets jump tracking
 
     // advance to the first command
-    // if (!advance_current_nav_cmd()) {
-    //     // on failure set mission complete
-    //     complete();
-    // }
+    if (!advance_current_nav_cmd()) {
+        // on failure set mission complete
+        complete();
+    }
+}
+
+void AP_Mission::start_stream()
+{
+    _flags.state = MISSION_RUNNING;
+    reset();
 }
 
 /// stop - stops mission execution.  subsequent calls to update() will have no effect until the mission is started or resumed
@@ -310,6 +316,60 @@ void AP_Mission::truncate(uint16_t index)
 ///     should be called at 10hz or higher
 void AP_Mission::update()
 {
+    // exit immediately if not running or no mission commands
+    if (_flags.state != MISSION_RUNNING || _cmd_total == 0) {
+        return;
+    }
+
+    update_exit_position();
+
+    // mission_change events
+    if (_last_change_time_prev_ms != _last_change_time_ms) {
+        _last_change_time_prev_ms = _last_change_time_ms;
+        on_mission_timestamp_change();
+    }
+
+    // save persistent waypoint_num for watchdog restore
+    hal.util->persistent_data.waypoint_num = _nav_cmd.index;
+
+    // check if we have an active nav command
+    if (!_flags.nav_cmd_loaded || _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
+        // advance in mission if no active nav command
+        if (!advance_current_nav_cmd()) {
+            // failure to advance nav command means mission has completed
+            complete();
+            return;
+        }
+    } else {
+        // run the active nav command
+        if (verify_command(_nav_cmd)) {
+            // market _nav_cmd as complete (it will be started on the next iteration)
+            _flags.nav_cmd_loaded = false;
+            // immediately advance to the next mission command
+            if (!advance_current_nav_cmd()) {
+                // failure to advance nav command means mission has completed
+                complete();
+                return;
+            }
+        }
+    }
+
+    // check if we have an active do command
+    if (!_flags.do_cmd_loaded) {
+        advance_current_do_cmd();
+    } else {
+        // check the active do command
+        if (verify_command(_do_cmd)) {
+            // mark _do_cmd as complete
+            _flags.do_cmd_loaded = false;
+        }
+    }
+}
+
+/// update - ensures the command queues are loaded with the next command and calls main programs command_init and command_verify functions to progress the mission
+///     should be called at 10hz or higher
+void AP_Mission::update_stream()
+{
     Mission_Command cmd;
     if (!get_next_cmd(AP_MISSION_FIRST_REAL_COMMAND, cmd, true)) {
         return;
@@ -483,7 +543,6 @@ bool AP_Mission::add_cmd(Mission_Command& cmd)
 ///     returns true if successfully replaced, false on failure
 bool AP_Mission::replace_cmd(uint16_t index, const Mission_Command& cmd)
 {
-
     // sanity check index
     if (index >= (unsigned)_cmd_total) {
         return false;

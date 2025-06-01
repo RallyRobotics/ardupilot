@@ -516,6 +516,8 @@ public:
     ///     To-Do: should we validate the mission first and return true/false?
     void start();
 
+    void start_stream();
+
     /// stop - stops mission execution.  subsequent calls to update() will have no effect until the mission is started or resumed
     void stop();
 
@@ -545,6 +547,8 @@ public:
     ///
     /// public command methods
     ///
+
+    void update_stream();
 
     bool pop_cmd();
 

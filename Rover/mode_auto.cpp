@@ -60,7 +60,7 @@ void ModeAuto::update()
             waiting_to_start = false;
         }
     } else {
-        mission.update();
+        mission.update_stream();
     }
 
     switch (_submode) {
