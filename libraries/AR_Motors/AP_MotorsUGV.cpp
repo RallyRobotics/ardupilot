@@ -17,6 +17,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsUGV.h"
 #include <AP_Relay/AP_Relay.h>
+#include <AP_Swivel/AP_Swivel.h>
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
@@ -121,8 +122,8 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     AP_GROUPEND
 };
 
-AP_MotorsUGV::AP_MotorsUGV(AP_WheelRateControl& rate_controller) :
-    _rate_controller(rate_controller)
+AP_MotorsUGV::AP_MotorsUGV(AP_WheelRateControl& rate_controller, AP_SwivelControl& swivel_controller) :
+    _rate_controller(rate_controller), _swivel_controller(swivel_controller)
 {
     AP_Param::setup_object_defaults(this, var_info);
     _singleton = this;
@@ -303,13 +304,21 @@ bool AP_MotorsUGV::have_skid_steering() const
     return (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) && SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) || is_omni();
 }
 
+/*
+  work out if swivel steering is available
+ */
+bool AP_MotorsUGV::have_swivel_steering() const
+{
+    return have_skid_steering() && have_vectored_thrust();
+}
+
 // true if the vehicle has a mainsail
 bool AP_MotorsUGV::has_sail() const
 {
     return SRV_Channels::function_assigned(SRV_Channel::k_mainsail_sheet) || SRV_Channels::function_assigned(SRV_Channel::k_wingsail_elevator) || SRV_Channels::function_assigned(SRV_Channel::k_mast_rotation);
 }
 
-void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
+void AP_MotorsUGV::output(bool armed, float ground_speed, float desired_speed, float desired_turn_rate, float turn_rate, float dt)
 {
     // soft-armed overrides passed in armed status
     if (!hal.util->get_soft_armed()) {
@@ -327,17 +336,62 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     // slew limit throttle
     slew_limit_throttle(dt);
 
-    // output for regular steering/throttle style frames
-    output_regular(armed, ground_speed, _steering, _throttle);
+    // output for swivel steering style frames
+    AP_Swivel *swivel = AP::swivel();
+    // the angle of swivel as measured by hall sensor
+    float measured_angle;
+    swivel->get_angle(measured_angle);
+    // apply trim value
+    _actual_swivel_angle = measured_angle;
+    _swivel_trim = atanf((turn_rate * 0.775) / ground_speed);
 
-    // output for skid steering style frames
-    output_skid_steering(armed, _steering, _throttle, dt);
+    // output to throttle channels
+    if (armed) {
+        const float vector_angle_max_rad = radians(constrain_float(_vector_angle_max, 0.0f, 90.0f));
+        if (_scale_steering) {
+            // normalise desired steering and throttle to ease calculations
+            float steering_norm = _steering / 4500.0f;
+            float throttle_norm = _throttle * 0.01f;
 
-    // output for omni frames
-    output_omni(armed, _steering, _throttle, _lateral);
+            // the amount of thrust to send to swivel
+            float magnitude = steering_norm * sinf(_actual_swivel_angle) + throttle_norm * cosf(_actual_swivel_angle);
+            // the angle the swivel must be at to achieve a turn rate given an actual speed
+            float desired_swivel_angle = 0.0f;
 
-    // output to sails
-    output_sail();
+            if (!is_zero(desired_speed)) {
+                float current_speed = desired_speed;
+                if (fabsf(ground_speed) > 0.25f) {
+                    // we have enough speed to accurately integrate trim
+                    current_speed = ground_speed;
+                    // the angle of swivel as calculated directly based on vehicle attitude
+                    // float effective_swivel_angle = atanf((turn_rate * 0.775) / ground_speed);
+                    // determine error of measured angle and effective angle
+                    // float angle_error = _actual_swivel_angle - effective_swivel_angle;
+                    // _swivel_trim = constrain_float(_swivel_trim + (angle_error * dt), -10.0f, 10.0f);
+                }
+                desired_swivel_angle = atanf((desired_turn_rate * 0.775) / current_speed);
+
+            } else if (!is_zero(desired_turn_rate)) {
+                desired_swivel_angle = is_positive(desired_turn_rate) ? vector_angle_max_rad : -vector_angle_max_rad;
+            }
+
+            // set swivel inputs
+            _swivel_throttle = magnitude * 100.0f;
+            _desired_swivel_angle = desired_swivel_angle;
+        } else {
+            // set swivel inputs
+            _swivel_throttle = _throttle;
+            _desired_swivel_angle = _steering * vector_angle_max_rad / 4500.0f;
+        }
+    }
+
+    // Get the correction required to achieve desired angle
+    _swivel_steering = _swivel_controller.get_swivel_position_correction(_desired_swivel_angle, _swivel_throttle, dt);
+    if (_swivel_controller.is_limited()) {
+        limit.steer_left = limit.steer_right = limit.throttle_lower = limit.throttle_upper = true;
+    }
+    // send output to nested skid-steer mixer
+    output_skid_steering(armed, _swivel_steering, _swivel_throttle, dt);
 
     // send values to the PWM timers for output
     auto &srv = AP::srv();
@@ -699,95 +753,6 @@ void AP_MotorsUGV::clear_omni_motors(int8_t motor_num)
         _steering_factor[motor_num] = 0;
         _lateral_factor[motor_num] = 0;
     }
-}
-
-// output to regular steering and throttle channels
-void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering, float throttle)
-{
-    // output to throttle channels
-    if (armed) {
-        if (_scale_steering) {
-            // vectored thrust handling
-            if (have_vectored_thrust()) {
-
-                // normalise desired steering and throttle to ease calculations
-                float steering_norm = steering / 4500.0f;
-                const float throttle_norm = throttle * 0.01f;
-
-                // steering can never be more than throttle * tan(_vector_angle_max)
-                const float vector_angle_max_rad = radians(constrain_float(_vector_angle_max, 0.0f, 90.0f));
-                const float steering_norm_lim = fabsf(throttle_norm * tanf(vector_angle_max_rad));
-                if (fabsf(steering_norm) > steering_norm_lim) {
-                    if (is_positive(steering_norm)) {
-                        steering_norm = steering_norm_lim;
-                    }
-                    if (is_negative(steering_norm)) {
-                        steering_norm = -steering_norm_lim;
-                    }
-                    limit.steer_right = true;
-                    limit.steer_left = true;
-                }
-
-                if (!is_zero(throttle_norm)) {
-                    // calculate steering angle
-                    float steering_angle_rad = atanf(steering_norm / throttle_norm);
-                    // limit steering angle to vector_angle_max
-                    if (fabsf(steering_angle_rad) > vector_angle_max_rad) {
-                        steering_angle_rad = constrain_float(steering_angle_rad, -vector_angle_max_rad, vector_angle_max_rad);
-                        limit.steer_right = true;
-                        limit.steer_left = true;
-                     }
-
-                    // convert steering angle to steering output
-                    steering = steering_angle_rad / vector_angle_max_rad * 4500.0f;
-
-                    // scale up throttle to compensate for steering angle
-                    const float throttle_scaler_inv = cosf(steering_angle_rad);
-                    if (!is_zero(throttle_scaler_inv)) {
-                        throttle /= throttle_scaler_inv;
-                    }
-                }
-            } else {
-                // scale steering down as speed increase above MOT_SPD_SCA_BASE (1 m/s default)
-                if (is_positive(_speed_scale_base) && (fabsf(ground_speed) > _speed_scale_base)) {
-                    steering *= (_speed_scale_base / fabsf(ground_speed));
-                } else {
-                    // regular steering rover at low speed so set limits to stop I-term build-up in controllers
-                    if (!have_skid_steering()) {
-                        limit.steer_left = true;
-                        limit.steer_right = true;
-                    }
-                }
-                // reverse steering direction when backing up
-                if (is_negative(ground_speed)) {
-                    steering *= -1.0f;
-                }
-            }
-        } else {
-            // reverse steering direction when backing up
-            if (is_negative(throttle)) {
-                steering *= -1.0f;
-            }
-        }
-        output_throttle(SRV_Channel::k_throttle, throttle);
-    } else {
-        // handle disarmed case
-        if (_disarm_disable_pwm) {
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
-        } else {
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::TRIM);
-        }
-    }
-
-    // clear and set limits based on input
-    // we do this here because vectored thrust or speed scaling may have reduced steering request
-    set_limits_from_input(armed, steering, throttle);
-
-    // constrain steering
-    steering = constrain_float(steering, -4500.0f, 4500.0f);
-
-    // always allow steering to move
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
 }
 
 // output to skid steering channels

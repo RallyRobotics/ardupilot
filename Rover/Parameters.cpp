@@ -694,6 +694,16 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: mode_circle.cpp
     AP_SUBGROUPINFO(mode_circle, "CIRC", 57, ParametersG2, ModeCircle),
 
+#if AP_SWIVEL_ENABLED
+    // @Group: SWIVEL
+    // @Path: ../libraries/AP_Swivel/AP_Swivel.cpp
+    AP_SUBGROUPINFO(swivel, "SWIVEL", 58, ParametersG2, AP_Swivel),
+
+    // @Group: SPC
+    // @Path: ../libraries/AP_Swivel/AP_SwivelControl.cpp
+    AP_SUBGROUPINFO(swivel_control, "SPC", 59, ParametersG2, AP_SwivelControl),
+#endif
+
     AP_GROUPEND
 };
 
@@ -736,9 +746,13 @@ ParametersG2::ParametersG2(void)
     beacon(),
 #endif
     wheel_rate_control(wheel_encoder),
-    motors(wheel_rate_control),
+    motors(wheel_rate_control, swivel_control),
     attitude_control(),
     smart_rtl(),
+#if AP_SWIVEL_ENABLED
+    swivel(),
+    swivel_control(swivel),
+#endif
 #if HAL_PROXIMITY_ENABLED
     proximity(),
 #endif

@@ -1898,6 +1898,9 @@ void AP_Periph_FW::can_update()
 #ifdef HAL_PERIPH_ENABLE_PROXIMITY
         can_proximity_update();
 #endif
+#ifdef HAL_PERIPH_ENABLE_SWIVEL
+        can_swivel_update();
+#endif
     #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
         can_buzzer_update();
     #endif

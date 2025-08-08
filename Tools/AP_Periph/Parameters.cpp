@@ -683,6 +683,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(relay,                 "RELAY", AP_Relay),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_SWIVEL
+    // @Group: SWIVEL
+    // @Path: ../libraries/AP_Swivel/AP_Swivel.cpp
+    GOBJECT(swivel,                "SWIVEL", AP_Swivel),
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
     // @Param: TEMP_MSG_RATE
     // @DisplayName: Temperature sensor message rate

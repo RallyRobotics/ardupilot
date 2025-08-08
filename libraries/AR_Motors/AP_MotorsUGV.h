@@ -2,12 +2,13 @@
 
 #include <AP_Arming/AP_Arming.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
+#include <AP_Swivel/AP_SwivelControl.h>
 #include <SRV_Channel/SRV_Channel.h>
 
 class AP_MotorsUGV {
 public:
     // Constructor
-    AP_MotorsUGV(AP_WheelRateControl& rate_controller);
+    AP_MotorsUGV(AP_WheelRateControl& rate_controller, AP_SwivelControl& swivel_controller);
 
     // singleton support
     static AP_MotorsUGV    *get_singleton(void) { return _singleton; }
@@ -52,6 +53,13 @@ public:
     float get_throttle() const { return _throttle; }
     void set_throttle(float throttle);
 
+    // get swivel state parameters
+    float get_swivel_throttle() const { return _swivel_throttle; }
+    float get_swivel_steering() const { return _swivel_steering; }
+    float get_swivel_actual() const { return _actual_swivel_angle; }
+    float get_swivel_desired() const { return _desired_swivel_angle; }
+    float get_swivel_trim() const { return _swivel_trim; }
+
     // get or set roll as a value from -1 to 1
     float get_roll() const { return _roll; }
     void set_roll(float roll);
@@ -88,13 +96,16 @@ public:
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
 
+    // true if vehicle is capable of swivel steering
+    bool have_swivel_steering() const;
+
     // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
     bool have_vectored_thrust() const { return is_positive(_vector_angle_max); }
 
     // output to motors and steering servos
     // ground_speed should be the vehicle's speed over the surface in m/s
     // dt should be expected time between calls to this function
-    void output(bool armed, float ground_speed, float dt);
+    void output(bool armed, float ground_speed, float desired_throttle, float desired_turn_rate, float turn_rate, float dt);
 
     // test steering or throttle output as a percentage of the total (range -100 to +100)
     // used in response to DO_MOTOR_TEST mavlink command
@@ -161,9 +172,6 @@ private:
     // disable omni motor and remove all throttle, steering and lateral factor for this motor
     void clear_omni_motors(int8_t motor_num);
 
-    // output to regular steering and throttle channels
-    void output_regular(bool armed, float ground_speed, float steering, float throttle);
-
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle, float dt);
 
@@ -192,8 +200,12 @@ private:
     // use rate controller to achieve desired throttle
     float get_rate_controlled_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt);
 
+    // use rate controller to achieve desired swivel angle
+    float get_swivel_position_correction(float target, float throttle, float dt);
+    
     // external references
     AP_WheelRateControl &_rate_controller;
+    AP_SwivelControl &_swivel_controller;
 
     static const int8_t AP_MOTORS_NUM_MOTORS_MAX = 4;
 
@@ -213,6 +225,11 @@ private:
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
+    float   _swivel_throttle;         // requested swivel throttle as a value from -100 to 100
+    float   _swivel_steering;
+    float   _actual_swivel_angle;     // current angle of the swivel in radians
+    float   _desired_swivel_angle;    // desired angle of the swivel in radians
+    float   _swivel_trim;
     float   _throttle_prev; // throttle input from previous iteration
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
     float   _lateral;  // requested lateral input as a value from -100 to +100

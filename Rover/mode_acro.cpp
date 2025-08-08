@@ -3,9 +3,8 @@
 void ModeAcro::update()
 {
     // get speed forward
-    float speed, desired_steering;
+    float speed, desired_steering, desired_throttle, desired_speed = 0.0;
     if (!attitude_control.get_forward_speed(speed)) {
-        float desired_throttle;
         // convert pilot stick input into desired steering and throttle
         get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
 
@@ -17,7 +16,6 @@ void ModeAcro::update()
         // no valid speed, just use the provided throttle
         g2.motors.set_throttle(desired_throttle);
     } else {
-        float desired_speed;
         // convert pilot stick input into desired steering and speed
         get_pilot_desired_steering_and_speed(desired_steering, desired_speed);
         calc_throttle(desired_speed, true);
@@ -38,6 +36,9 @@ void ModeAcro::update()
                                                                  g2.motors.limit.steer_left,
                                                                  g2.motors.limit.steer_right,
                                                                  rover.G_Dt);
+    } else if (rover.g2.motors.have_swivel_steering() && is_zero(desired_throttle) && is_zero(desired_speed) && is_zero(desired_steering)) {
+        // no steering rate correction when both desired rate and throttle are 0
+        steering_out = 0.0;
     } else {
         // convert pilot steering input to desired turn rate in radians/sec
         const float target_turn_rate = (desired_steering / 4500.0f) * radians(g2.acro_turn_rate);

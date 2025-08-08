@@ -77,7 +77,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
 #endif
     SCHED_TASK(update_current_mode,   400,    200,  12),
-    SCHED_TASK(set_servos,            400,    200,  15),
+    SCHED_TASK(set_servos,            400,    300,  15),
     SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200,  21),
 #if AP_BEACON_ENABLED
@@ -129,8 +129,8 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200, 114),
 #endif
-#if HAL_BUTTON_ENABLED
-    SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200, 117),
+#if AP_SWIVEL_ENABLED
+    SCHED_TASK_CLASS(AP_Swivel,           &rover.g2.swivel,        update,        50,  300,  117),
 #endif
     SCHED_TASK(crash_check,            10,    200, 123),
     SCHED_TASK(cruise_learn_update,    50,    200, 126),
@@ -459,7 +459,7 @@ void Rover::one_second_loop(void)
     g2.wp_nav.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());
     g2.pos_control.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());
     g2.wheel_rate_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
-
+    g2.swivel_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #if AP_STATS_ENABLED
     // Update stats "flying" time
     AP::stats()->set_flying(g2.motors.active());

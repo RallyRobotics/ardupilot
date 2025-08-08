@@ -122,24 +122,16 @@ void GCS_MAVLINK_Rover::send_nav_controller_output() const
 
 void GCS_MAVLINK_Rover::send_servo_out()
 {
-    float motor1, motor3;
-    if (rover.g2.motors.have_skid_steering()) {
-        motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) * 0.001f);
-        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) * 0.001f);
-    } else {
-        motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_steering) / 4500.0f);
-        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f);
-    }
     mavlink_msg_rc_channels_scaled_send(
         chan,
         millis(),
         0,  // port 0
-        motor1,
-        0,
-        motor3,
-        0,
-        0,
-        0,
+        rover.g2.motors.get_steering(),
+        rover.g2.motors.get_throttle(),
+        rover.g2.motors.get_swivel_steering(),
+        degrees(rover.g2.motors.get_swivel_trim()),
+        degrees(rover.g2.motors.get_swivel_actual()),
+        degrees(rover.g2.motors.get_swivel_desired()),
         0,
         0,
 #if AP_RSSI_ENABLED
@@ -315,9 +307,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
         }
     }
 
-    // left wheel rate control pid
+    // swivel position control pid
     if (g.gcs_pid_mask & 8) {
-        pid_info = &g2.wheel_rate_control.get_pid(0).get_pid_info();
+        pid_info = &g2.swivel_control.get_pos_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, 7,
                                     pid_info->target,
                                     pid_info->actual,
@@ -332,9 +324,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
         }
     }
 
-    // right wheel rate control pid
+    // swivel rate control pid
     if (g.gcs_pid_mask & 16) {
-        pid_info = &g2.wheel_rate_control.get_pid(1).get_pid_info();
+        pid_info = &g2.swivel_control.get_rate_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, 8,
                                     pid_info->target,
                                     pid_info->actual,

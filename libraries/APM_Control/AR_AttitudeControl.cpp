@@ -774,19 +774,20 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     _desired_speed = get_desired_speed_accel_limited(desired_speed, dt);
 
     // calculate base throttle (protect against divide by zero)
-    float throttle_base = 0.0f;
     if (is_positive(cruise_speed) && is_positive(cruise_throttle)) {
-        throttle_base = _desired_speed * (cruise_throttle / cruise_speed);
+        _throttle_base = _desired_speed * (cruise_throttle / cruise_speed);
+    } else {
+        _throttle_base = 0.0f;
     }
 
     // calculate final output
     float throttle_out = _throttle_speed_pid.update_all(_desired_speed, speed, dt, (motor_limit_low || motor_limit_high || _throttle_limit_low || _throttle_limit_high));
     throttle_out += _throttle_speed_pid.get_ff();
-    throttle_out += throttle_base;
+    throttle_out += _throttle_base;
 
     // update PID info for reporting purposes
     _throttle_speed_pid_info = _throttle_speed_pid.get_pid_info();
-    _throttle_speed_pid_info.FF += throttle_base;
+    _throttle_speed_pid_info.FF += _throttle_base;
 
     // clear local limit flags used to stop i-term build-up as we stop reversed outputs going to motors
     _throttle_limit_low = false;
@@ -995,6 +996,11 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
     return true;
 }
 
+float AR_AttitudeControl::get_turn_rate() const
+{
+    return AP::ahrs().get_yaw_rate_earth();
+}
+
 float AR_AttitudeControl::get_decel_max() const
 {
     if (is_positive(_throttle_decel_max)) {
@@ -1022,6 +1028,16 @@ float AR_AttitudeControl::get_desired_speed() const
         return 0.0f;
     }
     return _desired_speed;
+}
+
+// get latest throttle base recorded during call to get_throttle_out_speed.  For reporting purposes only
+float AR_AttitudeControl::get_throttle_base() const
+{
+    // return zero if no recent calls to speed controller
+    if (!speed_control_active()) {
+        return 0.0f;
+    }
+    return _throttle_base;
 }
 
 // get acceleration limited desired speed

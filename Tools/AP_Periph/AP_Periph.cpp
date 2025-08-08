@@ -265,6 +265,10 @@ void AP_Periph_FW::init()
     }
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_SWIVEL
+    swivel.init();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     pwm_hardpoint_init();
 #endif

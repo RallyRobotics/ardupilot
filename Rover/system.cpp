@@ -48,6 +48,10 @@ void Rover::init_ardupilot()
     rangefinder.init(ROTATION_NONE);
 #endif
 
+#if AP_SWIVEL_ENABLED
+    g2.swivel.init();
+#endif
+
 #if HAL_PROXIMITY_ENABLED
     // init proximity sensor
     g2.proximity.init();
