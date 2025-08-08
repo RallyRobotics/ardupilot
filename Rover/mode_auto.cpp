@@ -56,7 +56,7 @@ void ModeAuto::update()
         Location loc;
         if (ahrs.get_origin(loc)) {
             // start/resume the mission (based on MIS_RESTART parameter)
-            mission.start();
+            mission.start_stream();
             waiting_to_start = false;
         }
     } else {
@@ -715,17 +715,27 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     Location cmdloc = cmd.content.location;
     cmdloc.sanitize(rover.current_loc);
 
-    // delayed stored in p1 in seconds
-    loiter_duration = ((int16_t) cmd.p1 < 0) ? 0 : cmd.p1;
-    loiter_start_time = 0;
-    if (loiter_duration > 0) {
-        always_stop_at_destination = true;
+    // Extract reverse flag (bit 15)
+    bool reverse = cmd.p1 & 0x8000;
+    set_reversed(reverse);
+    // Extract speed in cm/s (bits 0–14)
+    uint16_t speed_cm_s = cmd.p1 & 0x7FFF;
+    float speed_m_s = speed_cm_s / 100.0f;
+    if (!is_zero(speed_m_s)) {
+        set_desired_speed(speed_m_s);
     }
 
-    // do not add next wp if there are no more navigation commands
+    bool stop_required = true;
     AP_Mission::Mission_Command next_cmd;
-    if (always_stop_at_destination || !mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
-        // single destination
+    if (mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
+        bool next_reverse = next_cmd.p1 & 0x8000;
+        if (reverse == next_reverse) {
+            // We have a next cmd and its the same direction as current 
+            stop_required = false;
+        }
+    }
+
+    if (always_stop_at_destination || stop_required) {
         if (!set_desired_location(cmdloc)) {
             return false;
         }

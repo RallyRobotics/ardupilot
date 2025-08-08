@@ -574,9 +574,6 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
             // no more commands so return failure
             return false;
         }
-        if (cmd_index == start_index && cmd.id == MAV_CMD_DO_SET_REVERSE) {
-            return false;
-        }
         // if found a "navigation" command then return it
         if (is_nav_cmd(cmd)) {
             return true;
@@ -1135,7 +1132,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = (passby << 8) | (acp & 0x00FF);
 #else
         // delay at waypoint in seconds (this is for copters???)
-        cmd.p1 = packet.param1;
+        float speed_ms_f = packet.param2;
+        uint16_t speed = (uint16_t)roundf(speed_ms_f * 100.0f); 
+        speed = MIN(speed, 0x7FFF); 
+        bool reverse = (packet.param3 > 0);
+        cmd.p1 = (reverse ? 0x8000 : 0) | (speed & 0x7FFF);
 #endif
     }
     break;
