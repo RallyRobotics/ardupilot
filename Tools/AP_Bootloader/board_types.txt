@@ -411,6 +411,10 @@ AP_HW_DroneerF405                    5800
 #IDs 5810-5819 reserved for Brother Hobby
 AP_HW_BrotherHobbyH743               5810
 
+# Rally Robotics
+AP_HW_RallySwivel                    5900
+AP_HW_RallyAuxBox                    5901
+
 # IDs 6000-6099 reserved for SpektreWorks
 
 # IDs 6600-6699 reserved for Eagle Eye Drones

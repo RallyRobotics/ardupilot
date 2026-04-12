@@ -269,6 +269,10 @@ void AP_Periph_FW::init()
     swivel.init();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_BALLBAY
+    ballbay.init();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     pwm_hardpoint_init();
 #endif
@@ -538,6 +542,9 @@ void AP_Periph_FW::update()
 #endif
 
     can_update();
+#if AP_BALLBAY_ENABLED
+    ballbay.update();
+#endif
 
 #ifdef HAL_PERIPH_ENABLE_NETWORKING
     networking_periph.update();

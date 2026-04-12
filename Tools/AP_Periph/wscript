@@ -84,6 +84,7 @@ def build(bld):
                      'GCS_MAVLink',
                      'AP_Relay',
                      'AP_Swivel',
+                     'AP_BallBay',
                      'AP_MultiHeap',
                      ]
 

@@ -689,6 +689,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(swivel,                "SWIVEL", AP_Swivel),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_BALLBAY
+    // @Group: BAY_
+    // @Path: ../libraries/AP_BallBay/AP_BallBay.cpp
+    GOBJECT(ballbay,               "BAY_", AP_BallBay),
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
     // @Param: TEMP_MSG_RATE
     // @DisplayName: Temperature sensor message rate

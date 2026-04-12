@@ -41,4 +41,4 @@ void AP_Periph_FW::can_swivel_update()
 }
 
 
-#endif // HAL_PERIPH_ENABLE_PROXIMITY
+#endif // HAL_PERIPH_ENABLE_SWIVEL

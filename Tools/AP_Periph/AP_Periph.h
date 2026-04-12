@@ -16,6 +16,7 @@
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Swivel/AP_Swivel.h>
+#include <AP_BallBay/AP_BallBay.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_MSP/AP_MSP.h>
@@ -186,6 +187,8 @@ public:
     void can_battery_send_cells(uint8_t instance);
     void can_proximity_update();
     void can_swivel_update();
+    void can_ballbay_update();
+    void ballbay_srv_unitless(const uint8_t actuator_id, const float command_value);
     void can_buzzer_update(void);
     void can_safety_button_update(void);
     void can_safety_LED_update(void);
@@ -312,6 +315,10 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_SWIVEL
     AP_Swivel swivel;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_BALLBAY
+    AP_BallBay ballbay;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT

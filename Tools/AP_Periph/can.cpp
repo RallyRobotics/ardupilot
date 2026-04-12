@@ -664,6 +664,7 @@ void AP_Periph_FW::handle_act_command(CanardInstance* canard_instance, CanardRxT
         const auto &c = cmd.commands.data[i];
         switch (c.command_type) {
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_UNITLESS:
+            ballbay_srv_unitless(c.actuator_id, c.command_value);
             rcout_srv_unitless(c.actuator_id, c.command_value);
             break;
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_PWM:
@@ -1900,6 +1901,9 @@ void AP_Periph_FW::can_update()
 #endif
 #ifdef HAL_PERIPH_ENABLE_SWIVEL
         can_swivel_update();
+#endif
+#ifdef HAL_PERIPH_ENABLE_BALLBAY
+        can_ballbay_update();
 #endif
     #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
         can_buzzer_update();
