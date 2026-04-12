@@ -50,8 +50,6 @@
 
 #define MAX_SIM_INSTANCES 16
 
-#define MAX_SIM_INSTANCES 16
-
 namespace SITL {
 
 /*

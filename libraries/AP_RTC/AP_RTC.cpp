@@ -10,12 +10,6 @@
 #include <AP_Common/time.h>
 #include <AP_Logger/AP_Logger.h>
 
-#define DEBUG_RTC_SHIFT 0
-
-#if DEBUG_RTC_SHIFT
-#include <AP_Logger/AP_Logger.h>
-#endif
-
 extern const AP_HAL::HAL& hal;
 
 AP_RTC::AP_RTC()
@@ -93,11 +87,6 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 #endif  // AP_RTC_LOGGING_ENABLED
 
     WITH_SEMAPHORE(rsem);
-
-#if DEBUG_RTC_SHIFT
-    uint64_t old_utc = 0;
-    UNUSED_RESULT(get_utc_usec(old_utc));
-#endif
 
     rtc_shift = tmp;
 

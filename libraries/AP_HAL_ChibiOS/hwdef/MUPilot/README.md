@@ -193,6 +193,7 @@ The UART7 connector is labelled debug, but is available as a general
 purpose UART with ArduPilot.
 
 ## RC Input
+
 RC input is configured on the PPM pin, at one end of the servo rail,
 marked RC in the above diagram. This pin supports all unidirectional RC protocols including PPM.  The DSM/SBUS pin is also tied to the PPM pin.For CRSF/ELRS/etc. protocols
 a full UART will need to be used with its SERIALx_PROTOCOL set to "23".

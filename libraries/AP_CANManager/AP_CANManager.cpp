@@ -468,61 +468,6 @@ void AP_CANManager::check_logging_enable(void)
 
 #endif // AP_CAN_LOGGING_ENABLED
 
-#if AP_CAN_LOGGING_ENABLED
-/*
-  handler for CAN frames for frame logging
- */
-void AP_CANManager::can_logging_callback(uint8_t bus, const AP_HAL::CANFrame &frame, AP_HAL::CANIface::CanIOFlags flags)
-{
-#if HAL_CANFD_SUPPORTED
-    if (frame.canfd) {
-        struct log_CAFD pkt {
-            LOG_PACKET_HEADER_INIT(LOG_CAFD_MSG),
-            time_us : AP_HAL::micros64(),
-            bus     : bus,
-            id      : frame.id,
-            dlc     : frame.dlc
-        };
-        memcpy(pkt.data, frame.data, frame.dlcToDataLength(frame.dlc));
-        AP::logger().WriteBlock(&pkt, sizeof(pkt));
-        return;
-    }
-#endif
-    struct log_CANF pkt {
-        LOG_PACKET_HEADER_INIT(LOG_CANF_MSG),
-        time_us : AP_HAL::micros64(),
-        bus     : bus,
-        id      : frame.id,
-        dlc     : frame.dlc
-    };
-    memcpy(pkt.data, frame.data, frame.dlc);
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
-}
-
-/*
-  see if we need to enable/disable the CAN logging callback
- */
-void AP_CANManager::check_logging_enable(void)
-{
-    for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
-        const bool enabled = _interfaces[i].option_is_set(CANIface_Params::Options::LOG_ALL_FRAMES);
-        uint8_t &logging_id = _interfaces[i].logging_id;
-        auto *can = hal.can[i];
-        if (can == nullptr) {
-            continue;
-        }
-        if (enabled && logging_id == 0) {
-            can->register_frame_callback(
-                FUNCTOR_BIND_MEMBER(&AP_CANManager::can_logging_callback, void, uint8_t, const AP_HAL::CANFrame &, AP_HAL::CANIface::CanIOFlags),
-                logging_id);
-        } else if (!enabled && logging_id != 0) {
-            can->unregister_frame_callback(logging_id);
-        }
-    }
-}
-
-#endif // AP_CAN_LOGGING_ENABLED
-
 AP_CANManager& AP::can()
 {
     return *AP_CANManager::get_singleton();

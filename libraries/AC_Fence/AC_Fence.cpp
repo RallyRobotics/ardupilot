@@ -885,11 +885,6 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
         fences_to_disable &= ~AC_FENCE_TYPE_ALT_MIN;
     }
 
-    if (_min_alt_state == MinAltState::MANUALLY_ENABLED) {
-        // if user has manually enabled the min-alt fence then don't auto-disable
-        fences_to_disable &= ~AC_FENCE_TYPE_ALT_MIN;
-    }
-
     // report on any fences that were auto-disabled
     if (fences_to_disable) {
         print_fence_message("auto-disabled", fences_to_disable);

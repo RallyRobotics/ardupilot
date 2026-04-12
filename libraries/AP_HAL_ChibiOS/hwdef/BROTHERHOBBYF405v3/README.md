@@ -92,6 +92,7 @@ The default battery parameters are:
 The BROTHERHOBBYF405v3 does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL connector.
 
 ## Firmware
+
 Firmware for the BROTHERHOBBYF405v3 can be found `here <https://firmware.ardupilot.org>`_ in sub-folders labeled “BROTHERHOBBYF405v3".
 
 ## Loading Firmware

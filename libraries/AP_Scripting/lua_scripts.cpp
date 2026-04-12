@@ -557,8 +557,6 @@ int lua_scripts::run_engine(lua_State *L) {
 
     uint32_t expansion_size = 0;
 
-    uint32_t expansion_size = 0;
-
     while (AP_Scripting::get_singleton()->should_run()) {
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
         if (lua_gettop(L) != 0) {

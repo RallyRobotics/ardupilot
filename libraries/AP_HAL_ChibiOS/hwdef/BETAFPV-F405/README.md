@@ -38,12 +38,14 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL6|TX6/RX6|UART6 (Spare, DMA-enabled)|
 
 ### F405 4S 20A Toothpick
+
 |Name|Pin|Function|
 |:-|:-|:-|
 |SERIAL3|RX3|UART3 (SBUS)
 |SERIAL5|RX5|UART5 (Missing)|
 
 ### F404 1S 12A AIO v3
+
 |Name|Pin|Function|
 |:-|:-|:-|
 |SERIAL5|RX5|UART5 (Missing)|

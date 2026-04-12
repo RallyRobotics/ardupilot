@@ -75,9 +75,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Rectify git perms issue that seems to crop up only on OSX
 RUN git config --global --add safe.directory $PWD
 
-# Rectify git perms issue that seems to crop up only on OSX
-RUN git config --global --add safe.directory $PWD
-
 # Check that local/bin are in PATH for pip --user installed package
 RUN echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PATH\"\nfi" >> ~/.ardupilot_env
 
