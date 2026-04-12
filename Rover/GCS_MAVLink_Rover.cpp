@@ -94,29 +94,6 @@ void GCS_MAVLINK_Rover::send_nav_controller_output() const
         MIN(control_mode->get_distance_to_destination(), UINT16_MAX),
         0,
         control_mode->speed_error(),
-        control_mode->crosstrack_error());
-}
-
-void GCS_MAVLINK_Rover::send_servo_out()
-{
-    mavlink_msg_rc_channels_scaled_send(
-        chan,
-        millis(),
-        0,  // port 0
-        rover.g2.motors.get_steering(),
-        rover.g2.motors.get_throttle(),
-        rover.g2.motors.get_swivel_steering(),
-        degrees(rover.g2.motors.get_swivel_trim()),
-        degrees(rover.g2.motors.get_swivel_actual()),
-        degrees(rover.g2.motors.get_swivel_desired()),
-        0,
-        0,
-#if AP_RSSI_ENABLED
-        receiver_rssi()
-#else
-        255
-#endif
-        );
         control_mode->crosstrack_error_m());
 }
 

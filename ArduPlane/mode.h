@@ -23,12 +23,6 @@
 
 #include <AP_Quicktune/AP_Quicktune.h>
 
-#ifndef AP_QUICKTUNE_ENABLED
-#define AP_QUICKTUNE_ENABLED HAL_QUADPLANE_ENABLED
-#endif
-
-#include <AP_Quicktune/AP_Quicktune.h>
-
 class AC_PosControl;
 class AC_AttitudeControl_Multi;
 class AC_Loiter;
@@ -184,11 +178,6 @@ public:
 
     // Return true if fixed wing system ID should be allowed
     bool allow_fw_systemid() const;
-#endif
-
-#if AP_QUICKTUNE_ENABLED
-    // does this mode support VTOL quicktune?
-    virtual bool supports_quicktune() const { return false; }
 #endif
 
 protected:
