@@ -4,6 +4,7 @@
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <AP_Swivel/AP_SwivelControl.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_BattMonitor/AP_BattMonitor_config.h>
 
 class AP_MotorsUGV {
 public:
@@ -180,7 +181,7 @@ private:
 
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     // dt is the main loop time interval and is required when rate control is required
-    void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt = 0.0f);
+    void output_throttle(SRV_Channel::Function function, float throttle, float dt = 0.0f);
 
     // output for sailboat's mainsail in the range of 0 to 100 and wing sail in the range +- 100
     void output_sail();
@@ -191,6 +192,11 @@ private:
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
 
+    // apply power limiting to throttle for one iteration
+#if AP_BATTERY_WATT_MAX_ENABLED
+    void power_limit_throttle(float dt);
+#endif
+
     // set limits based on steering and throttle input
     void set_limits_from_input(bool armed, float steering, float throttle);
 
@@ -198,7 +204,10 @@ private:
     float get_scaled_throttle(float throttle) const;
 
     // use rate controller to achieve desired throttle
-    float get_rate_controlled_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt);
+    float get_rate_controlled_throttle(SRV_Channel::Function function, float throttle, float dt);
+
+    // return power_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
+    float get_power_limit_max_throttle(float dt);
 
     // use rate controller to achieve desired swivel angle
     float get_swivel_position_correction(float target, float throttle, float dt);
@@ -221,6 +230,8 @@ private:
     AP_Float _vector_angle_max;  // angle between steering's middle position and maximum position when using vectored thrust.  zero to disable vectored thrust
     AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
+    AP_Float _reverse_delay; // delay in seconds when reversing motor
+    AP_Float _batt_power_time_constant;    // Time constant used to limit the battery power
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
@@ -231,6 +242,7 @@ private:
     float   _desired_swivel_angle;    // desired angle of the swivel in radians
     float   _swivel_trim;
     float   _throttle_prev; // throttle input from previous iteration
+    float   _throttle_limit = 1.0f;  // used for current limiting
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
     float   _lateral;  // requested lateral input as a value from -100 to +100
     float   _roll;      // requested roll as a value from -1 to +1
@@ -247,6 +259,17 @@ private:
     float   _steering_factor[AP_MOTORS_NUM_MOTORS_MAX];
     float   _lateral_factor[AP_MOTORS_NUM_MOTORS_MAX];
     uint8_t   _motors_num;
+
+    /*
+      3 reversal handling structures, for k_throttle, k_throttleLeft and k_throttleRight
+     */
+    struct ReverseThrottle {
+        float last_throttle;
+        uint32_t last_output_ms;
+
+        // output with delay for reversal
+        void output(SRV_Channel::Function function, float throttle, float delay);
+    } rev_delay_throttle, rev_delay_throttleLeft, rev_delay_throttleRight;
 
     static AP_MotorsUGV *_singleton;
 };

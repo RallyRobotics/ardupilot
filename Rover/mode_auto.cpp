@@ -47,7 +47,7 @@ void ModeAuto::update()
     // check if mission exists (due to being cleared while disarmed in AUTO,
     // if no mission, then stop...needs mode change out of AUTO, mission load,
     // and change back to AUTO to run a mission at this point
-    if (!hal.util->get_soft_armed() && mission.num_commands() <= 1) {
+    if (!hal.util->get_soft_armed() && !mission.present()) {
         start_stop();
     }
     // start or update mission
@@ -189,23 +189,23 @@ float ModeAuto::nav_bearing() const
 }
 
 // return cross track error (i.e. vehicle's distance from the line between waypoints)
-float ModeAuto::crosstrack_error() const
+float ModeAuto::crosstrack_error_m() const
 {
     switch (_submode) {
     case SubMode::WP:
-        return g2.wp_nav.crosstrack_error();
+        return g2.wp_nav.crosstrack_error_m();
     case SubMode::HeadingAndSpeed:
     case SubMode::Stop:
         return 0.0f;
     case SubMode::RTL:
-        return rover.mode_rtl.crosstrack_error();
+        return rover.mode_rtl.crosstrack_error_m();
     case SubMode::Loiter:
-        return rover.mode_loiter.crosstrack_error();
+        return rover.mode_loiter.crosstrack_error_m();
     case SubMode::Guided:
     case SubMode::NavScriptTime:
-        return rover.mode_guided.crosstrack_error();
+        return rover.mode_guided.crosstrack_error_m();
     case SubMode::Circle:
-        return g2.mode_circle.crosstrack_error();
+        return g2.mode_circle.crosstrack_error_m();
     }
 
     // this line should never be reached
@@ -236,7 +236,7 @@ float ModeAuto::get_desired_lat_accel() const
     return 0.0f;
 }
 
-// return distance (in meters) to destination
+// return straight-line distance (in meters) to destination
 float ModeAuto::get_distance_to_destination() const
 {
     switch (_submode) {
@@ -333,24 +333,24 @@ bool ModeAuto::reached_destination() const
 }
 
 // set desired speed in m/s
-bool ModeAuto::set_desired_speed(float speed)
+bool ModeAuto::set_desired_speed(float speed_ms)
 {
     switch (_submode) {
     case SubMode::WP:
     case SubMode::Stop:
-        return g2.wp_nav.set_speed_max(speed);
+        return g2.wp_nav.set_speed_max(speed_ms);
     case SubMode::HeadingAndSpeed:
-        _desired_speed = speed;
+        _desired_speed = speed_ms;
         return true;
     case SubMode::RTL:
-        return rover.mode_rtl.set_desired_speed(speed);
+        return rover.mode_rtl.set_desired_speed(speed_ms);
     case SubMode::Loiter:
-        return rover.mode_loiter.set_desired_speed(speed);
+        return rover.mode_loiter.set_desired_speed(speed_ms);
     case SubMode::Guided:
     case SubMode::NavScriptTime:
-        return rover.mode_guided.set_desired_speed(speed);
+        return rover.mode_guided.set_desired_speed(speed_ms);
     case SubMode::Circle:
-        return g2.mode_circle.set_desired_speed(speed);
+        return g2.mode_circle.set_desired_speed(speed_ms);
     }
     return false;
 }
@@ -395,7 +395,7 @@ bool ModeAuto::check_trigger(void)
 {
     // check for user pressing the auto trigger to off
     if (auto_triggered && g.auto_trigger_pin != -1 && rover.check_digital_pin(g.auto_trigger_pin) == 1) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "AUTO triggered off");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AUTO triggered off");
         auto_triggered = false;
         return false;
     }
@@ -415,7 +415,7 @@ bool ModeAuto::check_trigger(void)
 
     // check if trigger pin has been pushed
     if (g.auto_trigger_pin != -1 && rover.check_digital_pin(g.auto_trigger_pin) == 0) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Triggered AUTO with pin");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Triggered AUTO with pin");
         auto_triggered = true;
         return true;
     }
@@ -424,7 +424,7 @@ bool ModeAuto::check_trigger(void)
     if (!is_zero(g.auto_kickstart)) {
         const float xaccel = rover.ins.get_accel().x;
         if (xaccel >= g.auto_kickstart) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Triggered AUTO xaccel=%.1f", static_cast<double>(xaccel));
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Triggered AUTO xaccel=%.1f", static_cast<double>(xaccel));
             auto_triggered = true;
             return true;
         }
@@ -557,7 +557,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
     case MAV_CMD_DO_SET_ROI:
-        if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
+        if (!cmd.content.location.initialised()) {
             // switch off the camera tracking if enabled
             if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
                 rover.camera_mount.set_mode_to_default();
@@ -592,7 +592,7 @@ void ModeAuto::exit_mission()
     // play a tone
     AP_Notify::events.mission_complete = 1;
     // send message
-    gcs().send_text(MAV_SEVERITY_NOTICE, "Mission Complete");
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Mission Complete");
 
     switch ((DoneBehaviour)g2.mis_done_behave) {
     case DoneBehaviour::HOLD:
@@ -693,7 +693,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 
     default:
         // error message
-        gcs().send_text(MAV_SEVERITY_WARNING, "Skipping invalid cmd #%i", cmd.id);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Skipping invalid cmd #%i", cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
@@ -779,7 +779,7 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         nav_delay_time_max_ms = 0;
 #endif
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
 }
 
 // start guided within auto to allow external navigation system to control vehicle
@@ -829,14 +829,14 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         // check if we are loitering at this waypoint - the message sent to the GCS is different
         if (loiter_duration > 0) {
             // send message including loiter time
-            gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%u. Loiter for %u seconds",
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached waypoint #%u. Loiter for %u seconds",
                             (unsigned int)cmd.index,
                             (unsigned int)loiter_duration);
             // record the current time i.e. start timer
             loiter_start_time = millis();
         } else {
             // send simpler message to GCS
-            gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%u", (unsigned int)cmd.index);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached waypoint #%u", (unsigned int)cmd.index);
         }
     }
 
@@ -875,7 +875,7 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     const bool result = verify_nav_wp(cmd);
     if (result) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Finished active loiter");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Finished active loiter");
     }
     return result;
 }
@@ -985,7 +985,7 @@ void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     // set speed for active mode
     if (set_desired_speed(cmd.content.speed.target_ms)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "speed: %.1f m/s", static_cast<double>(cmd.content.speed.target_ms));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "speed: %.1f m/s", static_cast<double>(cmd.content.speed.target_ms));
     }
 }
 

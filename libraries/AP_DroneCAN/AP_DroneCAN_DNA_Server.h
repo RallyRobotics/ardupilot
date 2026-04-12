@@ -140,6 +140,20 @@ class AP_DroneCAN_DNA_Server
     Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_GetNodeInfoResponse> node_info_cb{this, &AP_DroneCAN_DNA_Server::handleNodeInfo};
     Canard::Client<uavcan_protocol_GetNodeInfoResponse> node_info_client;
 
+#if HAL_LOGGING_ENABLED
+    // Linked list of node status timestamps used for logging
+    struct node_status_log_data {
+        node_status_log_data(const uint8_t _id):id(_id) {};
+        node_status_log_data *next;
+        uint32_t last_uptime_sec;
+        uint32_t last_log_ms;
+        const uint8_t id;
+    };
+    node_status_log_data *node_status_list;
+    node_status_log_data *find_node_status_item(const uint8_t source_node_id);
+    void update_node_status(const uint8_t source_node_id, const uavcan_protocol_NodeStatus& msg);
+#endif // #if HAL_LOGGING_ENABLED
+
 public:
     AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan, CanardInterface &canard_iface, uint8_t driver_index);
 
@@ -149,10 +163,6 @@ public:
 
     //Initialises publisher and Server Record for specified uavcan driver
     bool init(uint8_t own_unique_id[], uint8_t own_unique_id_len, uint8_t node_id);
-
-    /* Subscribe to the messages to be handled for maintaining and allocating
-    Node ID list */
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     //report the server state, along with failure message if any
     bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;

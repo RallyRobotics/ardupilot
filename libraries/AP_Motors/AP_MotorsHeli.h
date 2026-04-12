@@ -27,9 +27,6 @@
 #define AP_MOTORS_HELI_COLLECTIVE_LAND_MIN      -2.0f // minimum landed collective blade pitch angle in deg for modes using althold
 
 
-// flybar types
-#define AP_MOTORS_HELI_NOFLYBAR                 0
-
 // rsc function output channels.
 #define AP_MOTORS_HELI_RSC                      CH_8
 
@@ -62,15 +59,15 @@ public:
     // output_min - sets servos to neutral point with motors stopped
     void output_min() override;
 
+    // set_desired_spool_state - set desired spool state with safety constraints
+    void set_desired_spool_state(DesiredSpoolState spool) override;
+
     //
     // heli specific methods
     //
 
     //set turbine start flag on to initiaize starting sequence
     void set_turb_start(bool turb_start) { _heliflags.start_engine = turb_start; }
-
-    // has_flybar - returns true if we have a mechical flybar
-    virtual bool has_flybar() const { return AP_MOTORS_HELI_NOFLYBAR; }
 
     // set_collective_for_landing - limits collective from going too low if we know we are landed
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
@@ -94,16 +91,8 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint32_t get_motor_mask() override;
 
-    virtual void set_acro_tail(bool set) {}
-
-    // ext_gyro_gain - set external gyro gain in range 0 ~ 1
-    virtual void ext_gyro_gain(float gain) {}
-
     // output - sends commands to the motors
     void output() override;
-
-    // supports_yaw_passthrough
-    virtual bool supports_yaw_passthrough() const { return false; }
 
     // update estimated throttle required to hover
     void update_throttle_hover(float dt);
@@ -130,10 +119,16 @@ public:
     // true if bailing out autorotation
     bool autorotation_bailout(void) const { return _main_rotor.autorotation.bailing_out(); }
 
+    // true if the autorotation functionality within the rsc has been enabled
+    bool rsc_autorotation_enabled(void) const { return _main_rotor.autorotation.enabled(); }
+
     // set land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
-	
-	//return zero lift collective position
+
+    // function to calculate and set the normalised collective position given a desired blade pitch angle (deg)
+    void set_coll_from_ang(float col_ang_deg);
+
+    //return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
 
     // enum for heli optional features
