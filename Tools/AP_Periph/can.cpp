@@ -1981,7 +1981,7 @@ void AP_Periph_FW::can_update()
 #if AP_PERIPH_BALLBAY_ENABLED
         can_ballbay_update();
 #endif
-    #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
+    #if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
         can_buzzer_update();
     #endif
     #ifdef HAL_GPIO_PIN_SAFE_LED
