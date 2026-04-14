@@ -1,5 +1,7 @@
 #pragma once
 
+#if AP_PERIPH_BALLBAY_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <stdint.h>
@@ -65,3 +67,5 @@ private:
     static uint8_t pga_bits_from_gain(uint8_t gain);
     static int32_t sign_extend24(uint32_t value);
 };
+
+#endif // AP_PERIPH_BALLBAY_ENABLED

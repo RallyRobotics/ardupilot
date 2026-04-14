@@ -1,6 +1,7 @@
-#include "TMC2209_Pulse.h"
+#include "AP_Periph.h"
 
-#include <math.h>
+#if AP_PERIPH_BALLBAY_ENABLED
+#include "TMC2209_Pulse.h"
 
 TMC2209_Pulse *TMC2209_Pulse::_driver = nullptr;
 
@@ -220,3 +221,5 @@ void TMC2209_Pulse::timer_cb()
 
     gptStartOneShotI(&GPTD6, high_ticks);
 }
+
+#endif // AP_PERIPH_BALLBAY_ENABLED

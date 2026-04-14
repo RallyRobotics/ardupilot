@@ -1,5 +1,7 @@
+#include "AP_Periph.h"
+
+#if AP_PERIPH_BALLBAY_ENABLED
 #include "NAU7802_ADC.h"
-#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -207,3 +209,5 @@ int32_t NAU7802_ADC::sign_extend24(uint32_t value)
     }
     return int32_t(value);
 }
+
+#endif // AP_PERIPH_BALLBAY_ENABLED

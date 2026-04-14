@@ -1,5 +1,7 @@
+#include "AP_Periph.h"
+
+#if AP_PERIPH_BALLBAY_ENABLED
 #include "TMC2209_Serial.h"
-#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -197,3 +199,5 @@ bool TMC2209_Serial::configure_driver(const Config &cfg)
     _configured = true;
     return true;
 }
+
+#endif // AP_PERIPH_BALLBAY_ENABLED

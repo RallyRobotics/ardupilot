@@ -1,5 +1,7 @@
 #pragma once
 
+#if AP_PERIPH_BALLBAY_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 class TMC2209_Serial
@@ -54,3 +56,5 @@ private:
     static uint8_t crc8_atm(const uint8_t *data, uint8_t len_without_crc);
     static uint8_t mres_code_from_microsteps(uint16_t microsteps);
 };
+
+#endif // AP_PERIPH_BALLBAY_ENABLED

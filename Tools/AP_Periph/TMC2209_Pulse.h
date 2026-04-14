@@ -1,7 +1,10 @@
 #pragma once
 
+#if AP_PERIPH_BALLBAY_ENABLED
+
 #include <hal.h>
 #include <stdint.h>
+#include <math.h>
 
 class TMC2209_Pulse
 {
@@ -51,3 +54,5 @@ private:
         palWriteLine(HAL_STEPPER_DIR_LINE, positive ? PAL_HIGH : PAL_LOW);
     }
 };
+
+#endif // AP_PERIPH_BALLBAY_ENABLED
