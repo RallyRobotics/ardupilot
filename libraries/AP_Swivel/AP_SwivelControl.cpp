@@ -264,8 +264,8 @@ float AP_SwivelControl::get_swivel_position_correction(float desired_angle, floa
         return 0;
     }
 
-    // check for timeout
-    uint32_t now = AP_HAL::millis();
+    // check for timeout in control loop scheduling
+    const uint32_t now = AP_HAL::millis();
     if (now - _last_update_ms > AP_SWIVEL_TIMEOUT_MS) {
         _pos_pid.reset_filter();
         _pos_pid.reset_I();
@@ -276,43 +276,45 @@ float AP_SwivelControl::get_swivel_position_correction(float desired_angle, floa
     }
     _last_update_ms = now;
 
-    // get current angel and rate from swivel
-    float current_angle = 0;
-    float current_rate = 0; 
-    _swivel.get_angle(current_angle);
-    _swivel.get_rate(current_rate);
+    float current_angle = 0.0f;
+    float current_rate = 0.0f;
+    if (!_swivel.get_angle(current_angle) || !_swivel.get_rate(current_rate)) {
+        _pos_pid.reset_filter();
+        _pos_pid.reset_I();
+        _rate_pid.reset_filter();
+        _rate_pid.reset_I();
+        _error_limit = false;
+        _rate_limit = false;
+        _pwm_limit = false;
+        return 0.0f;
+    }
+
     desired_angle = constrain_float(degrees(desired_angle), -90.0f, 90.0f);
-    
-    // get desired rate using position PID
+
     float desired_rate = _pos_pid.update_all(desired_angle, degrees(current_angle), dt, is_limited());
-    float error = _pos_pid.get_pid_info().error;
+    const float error = _pos_pid.get_pid_info().error;
     desired_rate += _pos_pid.get_ff();
 
-    // set limits for next iteration
-    _error_limit =  fabsf(error) >= _error_max;
+    _error_limit = fabsf(error) >= _error_max;
     _rate_limit = fabsf(desired_rate) >= _rate_max;
     desired_rate = constrain_float(desired_rate, -_rate_max, _rate_max);
 
-    // get desired pwm using rate PID
     float output = _rate_pid.update_all(desired_rate, degrees(current_rate), dt, _pwm_limit);
     output += _rate_pid.get_ff();
 
     // Temporary fix for flipped output
     output *= -1;
 
-    // Scale down swivel throttle to the cosine of the error, constrained to prevent sign flipping
     throttle *= cosf(radians(constrain_float(error, -90.0f, 90.0f)));
 
-    // Use current angle and throttle to determine torque vector
-    float torque_vector = 0;
-    if(!is_zero(current_angle)) {
-        float turn_radius = _wheelbase / sinf(current_angle);
-        float torque_ratio = _trackwidth * 0.5 / turn_radius;
+    float torque_vector = 0.0f;
+    if (!is_zero(current_angle)) {
+        const float turn_radius = _wheelbase / sinf(current_angle);
+        const float torque_ratio = _trackwidth * 0.5f / turn_radius;
         torque_vector = torque_ratio * throttle * 0.01f * 4500.0f;
     }
     output += torque_vector;
 
-    // set limits for next iteration
     _pwm_limit = fabsf(output) >= _pwm_max * 4500.0f;
 
     return output;

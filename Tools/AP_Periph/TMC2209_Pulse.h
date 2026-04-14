@@ -1,9 +1,5 @@
 #pragma once
 
-#include "AP_BallBay_config.h"
-
-#if AP_BALLBAY_ENABLED
-
 #include <hal.h>
 #include <stdint.h>
 
@@ -55,5 +51,3 @@ private:
         palWriteLine(HAL_STEPPER_DIR_LINE, positive ? PAL_HIGH : PAL_LOW);
     }
 };
-
-#endif

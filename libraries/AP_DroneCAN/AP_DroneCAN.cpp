@@ -60,7 +60,7 @@
 #include <AP_Relay/AP_Relay.h>
 #endif
 
-#include <AP_Swivel/AP_Swivel_DroneCAN.h>
+#include <AP_Swivel/AP_Swivel.h>
 
 #include <AP_TemperatureSensor/AP_TemperatureSensor_DroneCAN.h>
 
@@ -405,7 +405,7 @@ void AP_DroneCAN::init(uint8_t driver_index)
     subscribed = subscribed && AP_Mount_Xacti::subscribe_msgs(this);
 #endif
 
-    AP_Swivel_DroneCAN::subscribe_msgs(this);
+    AP_Swivel::subscribe_msgs(this);
 
 #if AP_TEMPERATURE_SENSOR_DRONECAN_ENABLED
     subscribed = subscribed && AP_TemperatureSensor_DroneCAN::subscribe_msgs(this);

@@ -1,7 +1,4 @@
 #include "NAU7802_ADC.h"
-
-#if AP_BALLBAY_ENABLED
-
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -210,5 +207,3 @@ int32_t NAU7802_ADC::sign_extend24(uint32_t value)
     }
     return int32_t(value);
 }
-
-#endif

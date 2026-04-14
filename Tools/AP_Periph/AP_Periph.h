@@ -15,8 +15,6 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_Proximity/AP_Proximity.h>
-#include <AP_Swivel/AP_Swivel.h>
-#include <AP_BallBay/AP_BallBay.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_MSP/AP_MSP.h>
@@ -47,6 +45,12 @@
 #include "actuator_telem.h"
 #include "networking.h"
 #include "serial_options.h"
+#if AP_PERIPH_SWIVEL_ENABLED
+#include "swivel.h"
+#endif
+#if AP_PERIPH_BALLBAY_ENABLED
+#include "ballbay.h"
+#endif
 #if AP_SIM_ENABLED
 #include <SITL/SITL.h>
 #endif
@@ -196,9 +200,13 @@ public:
     void can_battery_update();
     void can_battery_send_cells(uint8_t instance);
     void can_proximity_update();
+#if AP_PERIPH_SWIVEL_ENABLED
     void can_swivel_update();
+#endif
+#if AP_PERIPH_BALLBAY_ENABLED
     void can_ballbay_update();
     void ballbay_srv_unitless(const uint8_t actuator_id, const float command_value);
+#endif
     void can_buzzer_update(void);
     void can_safety_button_update(void);
     void can_safety_LED_update(void);
@@ -323,12 +331,12 @@ public:
     AP_Proximity proximity;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SWIVEL
-    AP_Swivel swivel;
+#if AP_PERIPH_SWIVEL_ENABLED
+    SwivelSensor swivel;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BALLBAY
-    AP_BallBay ballbay;
+#if AP_PERIPH_BALLBAY_ENABLED
+    BallBay ballbay;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT

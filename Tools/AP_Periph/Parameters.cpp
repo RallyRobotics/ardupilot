@@ -675,16 +675,16 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(relay,                 "RELAY", AP_Relay),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SWIVEL
-    // @Group: SWIVEL
-    // @Path: ../libraries/AP_Swivel/AP_Swivel.cpp
-    GOBJECT(swivel,                "SWIVEL", AP_Swivel),
+#if AP_PERIPH_SWIVEL_ENABLED
+    // @Group: SWVL_
+    // @Path: swivel.cpp
+    GOBJECT(swivel,                "SWVL_", SwivelSensor),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BALLBAY
+#if AP_PERIPH_BALLBAY_ENABLED
     // @Group: BAY_
-    // @Path: ../libraries/AP_BallBay/AP_BallBay.cpp
-    GOBJECT(ballbay,               "BAY_", AP_BallBay),
+    // @Path: ballbay.cpp
+    GOBJECT(ballbay,               "BAY_", BallBay),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE

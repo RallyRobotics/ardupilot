@@ -272,14 +272,6 @@ void AP_Periph_FW::init()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SWIVEL
-    swivel.init();
-#endif
-
-#ifdef HAL_PERIPH_ENABLE_BALLBAY
-    ballbay.init();
-#endif
-
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     pwm_hardpoint_init();
 #endif
@@ -329,6 +321,14 @@ void AP_Periph_FW::init()
 
 #if AP_PERIPH_ACTUATOR_TELEM_ENABLED
     actuator_telem.init();
+#endif
+
+#if AP_PERIPH_SWIVEL_ENABLED
+    swivel.init();
+#endif
+
+#if AP_PERIPH_BALLBAY_ENABLED
+    ballbay.init();
 #endif
 
     start_ms = AP_HAL::millis();
@@ -558,9 +558,6 @@ void AP_Periph_FW::update()
 #endif
 
     can_update();
-#if AP_BALLBAY_ENABLED
-    ballbay.update();
-#endif
 
 #if AP_PERIPH_NETWORKING_ENABLED
     networking_periph.update();

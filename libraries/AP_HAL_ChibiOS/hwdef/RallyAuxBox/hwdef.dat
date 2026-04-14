@@ -16,7 +16,7 @@ STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 
 # board ID for firmware load
-APJ_BOARD_ID 1062
+APJ_BOARD_ID AP_HW_RallyAuxBox
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -63,7 +63,7 @@ define HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY 16
 # ----------------------------------------------------------------------
 PA2  HEADLIGHT OUTPUT LOW GPIO(1)
 define RELAY1_PIN_DEFAULT 1
-define HAL_PERIPH_ENABLE_RELAY
+define AP_PERIPH_RELAY_ENABLED 1
 define AP_RELAY_ENABLED 1
 
 # ----------------------------------------------------------------------
@@ -81,8 +81,8 @@ define HAL_STEPPER_DIAG_GPIO 4
 define HAL_STEPPER_STEP_LINE PAL_LINE(GPIOB,4U)
 define HAL_STEPPER_DIR_LINE  PAL_LINE(GPIOB,5U)
 
-define HAL_PERIPH_ENABLE_BALLBAY
-define HAL_PERIPH_ENABLE_RC_OUT
+define AP_PERIPH_BALLBAY_ENABLED 1
+define AP_PERIPH_RC_OUT_ENABLED 1
 
 # ----------------------------------------------------------------------
 # STEPPER TIMING

@@ -1,7 +1,4 @@
 #include "TMC2209_Serial.h"
-
-#if AP_BALLBAY_ENABLED
-
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -114,10 +111,10 @@ uint32_t TMC2209_Serial::build_nodeconf()
     return (2U << 8);
 }
 
-uint32_t TMC2209_Serial::build_ihold_irun(const AP_BallBay_Params &params)
+uint32_t TMC2209_Serial::build_ihold_irun(const Config &cfg)
 {
-    const uint32_t ihold = uint32_t(params.tmc_ihold.get()) & 0x1FU;
-    const uint32_t irun = uint32_t(params.tmc_irun.get()) & 0x1FU;
+    const uint32_t ihold = uint32_t(cfg.ihold) & 0x1FU;
+    const uint32_t irun = uint32_t(cfg.irun) & 0x1FU;
     const uint32_t iholddelay = 8U;
 
     return
@@ -126,23 +123,24 @@ uint32_t TMC2209_Serial::build_ihold_irun(const AP_BallBay_Params &params)
         (iholddelay << 16);
 }
 
-uint32_t TMC2209_Serial::build_chopconf(const AP_BallBay_Params &params)
+uint32_t TMC2209_Serial::build_chopconf(const Config &cfg)
 {
     const uint32_t mres = uint32_t(
-        mres_code_from_microsteps(uint16_t(params.tmc_mstep.get()))
+        mres_code_from_microsteps(cfg.microsteps)
     ) & 0x0FU;
 
-    const uint32_t vsense = (params.tmc_vsense.get() != 0) ? 1U : 0U;
+    const uint32_t vsense = cfg.vsense ? 1U : 0U;
 
     return
-        (1U     << 28) | // intpol
+        (1U     << 28) |
         (mres   << 24) |
         (vsense << 17) |
-        (2U     << 15) | // tbl
-        (0U     << 7)  | // hend
-        (4U     << 4)  | // hstrt
-        (5U     << 0);   // toff
+        (2U     << 15) |
+        (0U     << 7)  |
+        (4U     << 4)  |
+        (5U     << 0);
 }
+
 
 uint32_t TMC2209_Serial::build_coolconf()
 {
@@ -150,7 +148,7 @@ uint32_t TMC2209_Serial::build_coolconf()
     return 0U;
 }
 
-bool TMC2209_Serial::configure_driver(const AP_BallBay_Params &params)
+bool TMC2209_Serial::configure_driver(const Config &cfg)
 {
     if (_configured) {
         return true;
@@ -168,7 +166,7 @@ bool TMC2209_Serial::configure_driver(const AP_BallBay_Params &params)
         return false;
     }
 
-    if (!write_reg_with_delay(Reg::IHOLD_IRUN, build_ihold_irun(params))) {
+    if (!write_reg_with_delay(Reg::IHOLD_IRUN, build_ihold_irun(cfg))) {
         return false;
     }
 
@@ -180,24 +178,22 @@ bool TMC2209_Serial::configure_driver(const AP_BallBay_Params &params)
         return false;
     }
 
-    if (!write_reg_with_delay(Reg::CHOPCONF, build_chopconf(params))) {
+    if (!write_reg_with_delay(Reg::CHOPCONF, build_chopconf(cfg))) {
         return false;
     }
 
-    if (!write_reg_with_delay(Reg::TPWMTHRS, uint32_t(params.tmc_tpwmthrs.get()))) {
+    if (!write_reg_with_delay(Reg::TPWMTHRS, cfg.tpwmthrs)) {
         return false;
     }
 
-    if (!write_reg_with_delay(Reg::TCOOLTHRS, uint32_t(params.tmc_tcoolthrs.get()))) {
+    if (!write_reg_with_delay(Reg::TCOOLTHRS, cfg.tcoolthrs)) {
         return false;
     }
 
-    if (!write_reg_with_delay(Reg::SGTHRS, uint32_t(params.tmc_sgthrs.get()) & 0xFFU)) {
+    if (!write_reg_with_delay(Reg::SGTHRS, uint32_t(cfg.sgthrs) & 0xFFU)) {
         return false;
     }
 
     _configured = true;
     return true;
 }
-
-#endif

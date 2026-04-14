@@ -5,63 +5,65 @@
 #if AP_SWIVEL_ENABLED
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
+#include <AP_HAL/Semaphores.h>
 #include "AP_Swivel_Params.h"
-
-class AP_Swivel_Backend;
 
 class AP_Swivel
 {
-    friend class AP_Swivel_Backend;
-
 public:
-
     AP_Swivel();
-
     CLASS_NO_COPY(AP_Swivel);
-
-    enum class Type {
-        NONE     = 0,
-#if AP_SWIVEL_PIN_ENABLED
-        ANALOG   = 1,
-#endif
-#if AP_SWIVEL_DRONECAN_ENABLED
-        DRONECAN = 2,
-#endif
-    };
-
-    struct Swivel_State {
-        float                  angle;
-        float                  rate;
-        uint32_t               last_reading_ms;
-    };
-
-    AP_Swivel_Params _params;
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    void init(void);
-    void update(void);
-    Type get_type() const { return (Type)((uint8_t)_params.type); }
+    void init();
+    void update();
+
+    bool enabled() const;
+    bool healthy() const;
+
     bool get_angle(float &angle_value) const;
     bool get_rate(float &rate_value) const;
-    bool enabled() const;
+    bool get_raw_voltage(float &voltage) const;
 
+    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_Swivel *get_singleton() { return _singleton; }
 
-    int8_t get_dronecan_sensor_id() const;
-
 private:
+    struct RxState {
+        float raw_voltage = 0.0f;
+        uint32_t sample_ms = 0;
+        bool new_sample = false;
+    };
+
+    struct State {
+        float raw_voltage = 0.0f;
+        float angle_rad = 0.0f;
+        float rate_rad_s = 0.0f;
+        uint32_t last_sample_ms = 0;
+        bool healthy = false;
+    };
+
+    static void handle_swivel_feedback(AP_DroneCAN *ap_dronecan,
+                                       const CanardRxTransfer& transfer,
+                                       const uavcan_equipment_actuator_Status &msg);
+
+    void handle_voltage_sample(uint8_t sensor_id, float voltage, uint32_t now_ms);
+    float map_voltage_to_angle(float voltage) const;
+
+    AP_Swivel_Params _params;
+    mutable HAL_Semaphore _sem;
+    RxState _rx {};
+    State _state {};
 
     static AP_Swivel *_singleton;
-    Swivel_State state;
-    AP_Swivel_Backend *driver;
 };
 
 namespace AP {
     AP_Swivel *swivel();
-};
+}
 
 #endif  // AP_SWIVEL_ENABLED

@@ -1,7 +1,5 @@
 #include "TMC2209_Pulse.h"
 
-#if AP_BALLBAY_ENABLED
-
 #include <math.h>
 
 TMC2209_Pulse *TMC2209_Pulse::_driver = nullptr;
@@ -222,5 +220,3 @@ void TMC2209_Pulse::timer_cb()
 
     gptStartOneShotI(&GPTD6, high_ticks);
 }
-
-#endif

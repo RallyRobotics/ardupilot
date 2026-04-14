@@ -11,7 +11,7 @@ FLASH_SIZE_KB 256
 APP_START_OFFSET_KB 4
 
 # board ID for firmware load
-APJ_BOARD_ID AP_HW_RallyAuxBox
+APJ_BOARD_ID AP_HW_RallySwivel
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -22,8 +22,8 @@ env AP_PERIPH 1
 # CAN
 # ----------------------------------------------------------------------
 CAN_ORDER 1
-PA11 CAN1_RX CAN1
-PA12 CAN1_TX CAN1
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
 
 # make bl baudrate match debug baudrate for easier debugging
 define BOOTLOADER_BAUDRATE 57600

@@ -680,7 +680,9 @@ void AP_Periph_FW::handle_act_command(CanardInstance* canard_instance, CanardRxT
         const auto &c = cmd.commands.data[i];
         switch (c.command_type) {
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_UNITLESS:
+#if AP_PERIPH_BALLBAY_ENABLED
             ballbay_srv_unitless(c.actuator_id, c.command_value);
+#endif
             rcout_srv_unitless(c.actuator_id, c.command_value);
             valid_output = true;
             break;
@@ -1973,10 +1975,10 @@ void AP_Periph_FW::can_update()
 #if AP_PERIPH_PROXIMITY_ENABLED
         can_proximity_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_SWIVEL
+#if AP_PERIPH_SWIVEL_ENABLED
         can_swivel_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_BALLBAY
+#if AP_PERIPH_BALLBAY_ENABLED
         can_ballbay_update();
 #endif
     #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)

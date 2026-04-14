@@ -380,7 +380,12 @@
 #ifndef AP_PERIPH_ACTUATOR_TELEM_ENABLED
 #define AP_PERIPH_ACTUATOR_TELEM_ENABLED 0
 #endif
-
+#ifndef AP_PERIPH_SWIVEL_ENABLED
+#define AP_PERIPH_SWIVEL_ENABLED 0
+#endif
+#ifndef AP_PERIPH_BALLBAY_ENABLED
+#define AP_PERIPH_BALLBAY_ENABLED 0
+#endif
 /*
  * turning on of ArduPilot features based on which AP_Periph features
  * are enabled:

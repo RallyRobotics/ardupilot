@@ -1,18 +1,23 @@
 #pragma once
 
-#include "AP_BallBay_config.h"
-
-#if AP_BALLBAY_ENABLED
-
 #include <AP_HAL/AP_HAL.h>
-#include "AP_BallBay_Params.h"
 
 class TMC2209_Serial
 {
 public:
+    struct Config {
+        uint8_t ihold = 1;
+        uint8_t irun = 20;
+        uint16_t microsteps = 8;
+        bool vsense = false;
+        uint32_t tpwmthrs = 0;
+        uint32_t tcoolthrs = 200;
+        uint8_t sgthrs = 50;
+    };
+
     TMC2209_Serial() = default;
 
-    bool configure_driver(const AP_BallBay_Params &params);
+    bool configure_driver(const Config &cfg);
     bool configured() const { return _configured; }
 
 private:
@@ -20,9 +25,9 @@ private:
     bool _configured = false;
 
     static constexpr uint32_t BAUD = 115200;
-    static constexpr uint8_t DRIVER_ADDR = 0;
-    static constexpr uint8_t SYNC = 0x05;
-    static constexpr uint8_t WRITE_DELAY_MS = 2;
+    static constexpr uint8_t  DRIVER_ADDR = 0;
+    static constexpr uint8_t  SYNC = 0x05;
+    static constexpr uint8_t  WRITE_DELAY_MS = 2;
 
     enum class Reg : uint8_t {
         GCONF      = 0x00,
@@ -42,12 +47,10 @@ private:
 
     static uint32_t build_gconf();
     static uint32_t build_nodeconf();
-    static uint32_t build_ihold_irun(const AP_BallBay_Params &params);
+    static uint32_t build_ihold_irun(const Config &cfg);
     static uint32_t build_coolconf();
-    static uint32_t build_chopconf(const AP_BallBay_Params &params);
+    static uint32_t build_chopconf(const Config &cfg);
 
     static uint8_t crc8_atm(const uint8_t *data, uint8_t len_without_crc);
     static uint8_t mres_code_from_microsteps(uint16_t microsteps);
 };
-
-#endif
