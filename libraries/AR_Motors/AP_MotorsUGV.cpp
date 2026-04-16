@@ -363,9 +363,7 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float desired_speed, f
     // the angle of swivel as measured by hall sensor
     float measured_angle;
     swivel->get_angle(measured_angle);
-    // apply trim value
     _actual_swivel_angle = measured_angle;
-    _swivel_trim = atanf((turn_rate * 0.775) / ground_speed);
 
     // output to throttle channels
     if (armed) {
@@ -383,13 +381,7 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float desired_speed, f
             if (!is_zero(desired_speed)) {
                 float current_speed = desired_speed;
                 if (fabsf(ground_speed) > 0.25f) {
-                    // we have enough speed to accurately integrate trim
                     current_speed = ground_speed;
-                    // the angle of swivel as calculated directly based on vehicle attitude
-                    // float effective_swivel_angle = atanf((turn_rate * 0.775) / ground_speed);
-                    // determine error of measured angle and effective angle
-                    // float angle_error = _actual_swivel_angle - effective_swivel_angle;
-                    // _swivel_trim = constrain_float(_swivel_trim + (angle_error * dt), -10.0f, 10.0f);
                 }
                 desired_swivel_angle = atanf((desired_turn_rate * 0.775) / current_speed);
 

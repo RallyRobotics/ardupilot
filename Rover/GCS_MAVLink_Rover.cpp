@@ -203,6 +203,78 @@ void GCS_MAVLINK_Rover::send_water_depth()
 }
 #endif  // AP_RANGEFINDER_ENABLED
 
+#if AP_SWIVEL_ENABLED || AP_BALLBAY_ENABLED
+void GCS_MAVLINK_Rover::send_actuator_output_status()
+{
+    float actuator[32] = {};
+    uint32_t active = 0;
+
+#if AP_SWIVEL_ENABLED
+
+    if (rover.g2.swivel.healthy()) {
+        float swivel_voltage;
+        if (rover.g2.swivel.get_raw_voltage(swivel_voltage)) {
+            actuator[0] = swivel_voltage;
+            active |= (1U << 0);
+        }
+        
+        float swivel_rate;
+        if (rover.g2.swivel.get_rate(swivel_rate)) {
+            actuator[1] = degrees(swivel_rate);
+            active |= (1U << 1);
+        }
+        
+        float swivel_angle;
+        if (rover.g2.swivel.get_angle(swivel_angle)) {
+            actuator[2] = degrees(swivel_angle);
+            active |= (1U << 2);
+        }
+        
+        actuator[3] = degrees(rover.g2.motors.get_swivel_desired());
+        active |= (1U << 3);
+        
+        actuator[4] = rover.g2.motors.get_swivel_steering();
+        active |= (1U << 4);
+        
+        actuator[5] = rover.g2.motors.get_swivel_throttle();
+        active |= (1U << 5);
+    }
+
+#endif // AP_SWIVEL_ENABLED
+
+#if AP_BALLBAY_ENABLED
+
+    if (rover.g2.ballbay.healthy()) {
+
+        float ballbay_speed;
+        if (rover.g2.ballbay.get_speed(ballbay_speed)) {
+            actuator[7] = ballbay_speed;
+            active |= (1U << 7);
+        }
+        
+        float ballbay_position;
+        if (rover.g2.ballbay.get_position(ballbay_position)) {
+            actuator[6] = ballbay_position;
+            active |= (1U << 6);
+        }
+        
+        float ballbay_force;
+        if (rover.g2.ballbay.get_force(ballbay_force)) {
+            actuator[8] = ballbay_force;
+            active |= (1U << 8);
+        }
+    }
+        
+#endif // AP_BALLBAY_ENABLED
+
+    mavlink_msg_actuator_output_status_send(
+        chan,
+        AP_HAL::micros64(),
+        active,
+        actuator);
+}
+#endif  // AP_SWIVEL_ENABLED || AP_BALLBAY_ENABLED
+
 /*
   send PID tuning message
  */
@@ -264,10 +336,14 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
         }
     }
 
-    // swivel position control pid
+    // left wheel rate control pid
     if (g.gcs_pid_mask & 8) {
+#if AP_SWIVEL_ENABLED
         pid_info = &g2.swivel_control.get_pos_pid().get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 7,
+#else
+        pid_info = &g2.wheel_rate_control.get_pid(0).get_pid_info();
+#endif
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_WHEEL_LEFT,
                                     pid_info->target,
                                     pid_info->actual,
                                     pid_info->FF,
@@ -281,10 +357,14 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
         }
     }
 
-    // swivel rate control pid
+    // right wheel rate control pid
     if (g.gcs_pid_mask & 16) {
+#if AP_SWIVEL_ENABLED
         pid_info = &g2.swivel_control.get_rate_pid().get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 8,
+#else
+        pid_info = &g2.wheel_rate_control.get_pid(1).get_pid_info();
+#endif
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_WHEEL_RIGHT,
                                     pid_info->target,
                                     pid_info->actual,
                                     pid_info->FF,
@@ -402,6 +482,13 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         send_water_depth();
         break;
 #endif  // AP_RANGEFINDER_ENABLED
+
+#if AP_SWIVEL_ENABLED || AP_BALLBAY_ENABLED
+    case MSG_ACTUATOR_OUTPUT_STATUS:
+        CHECK_PAYLOAD_SIZE(ACTUATOR_OUTPUT_STATUS);
+        send_actuator_output_status();
+        break;
+#endif  // AP_SWIVEL_ENABLED
 
     default:
         return GCS_MAVLINK::try_send_message(id);

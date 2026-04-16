@@ -11,6 +11,7 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Swivel/AP_Swivel.h>
 #include <AP_Swivel/AP_SwivelControl.h>
+#include <AP_BallBay/AP_BallBay.h>
 #include "AP_Rally.h"
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_Stats/AP_Stats.h>
@@ -308,11 +309,6 @@ public:
     AP_WheelEncoder wheel_encoder;
     AP_WheelRateControl wheel_rate_control;
 
-#if AP_SWIVEL_ENABLED
-    AP_Swivel swivel;
-    AP_SwivelControl swivel_control;
-#endif
-
     // Motor library
     AP_MotorsUGV motors;
 
@@ -327,6 +323,15 @@ public:
 
     // Safe RTL library
     AP_SmartRTL smart_rtl;
+
+#if AP_SWIVEL_ENABLED
+    AP_Swivel swivel;
+    AP_SwivelControl swivel_control;
+#endif
+
+#if AP_BALLBAY_ENABLED
+    AP_BallBay ballbay;
+#endif
 
     // default speed for rtl
     AP_Float rtl_speed;

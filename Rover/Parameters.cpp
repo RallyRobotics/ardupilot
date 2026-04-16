@@ -644,6 +644,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(swivel_control, "SPC", 59, ParametersG2, AP_SwivelControl),
 #endif
 
+#if AP_BALLBAY_ENABLED
+    // @Group: BBAY
+    // @Path: ../libraries/AP_BallBay/AP_BallBay.cpp
+    AP_SUBGROUPINFO(ballbay, "BBAY", 60, ParametersG2, AP_BallBay),
+#endif
+
     AP_GROUPEND
 };
 
@@ -692,6 +698,9 @@ ParametersG2::ParametersG2(void)
 #if AP_SWIVEL_ENABLED
     swivel(),
     swivel_control(swivel),
+#endif
+#if AP_BALLBAY_ENABLED
+    ballbay(),
 #endif
 #if HAL_PROXIMITY_ENABLED
     proximity(),

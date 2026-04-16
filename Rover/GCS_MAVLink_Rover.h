@@ -72,6 +72,10 @@ private:
     uint8_t last_WATER_DEPTH_index;
 #endif
 
+#if AP_SWIVEL_ENABLED || AP_BALLBAY_ENABLED
+    void send_actuator_output_status();
+#endif
+
 #if HAL_HIGH_LATENCY2_ENABLED
     uint8_t high_latency_tgt_heading() const override;
     uint16_t high_latency_tgt_dist() const override;

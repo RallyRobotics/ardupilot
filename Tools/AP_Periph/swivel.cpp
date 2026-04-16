@@ -40,99 +40,87 @@ const AP_Param::GroupInfo SwivelSensor::var_info[] = {
     AP_GROUPEND
 };
 
-SwivelSensor::SwivelSensor(void)
+SwivelSensor::SwivelSensor()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+void SwivelSensor::reset_state()
+{
+    _last_voltage = 0.0f;
+    _last_sample_us = 0;
+    _have_sample = false;
+}
+
 void SwivelSensor::init()
 {
-    ensure_source();
-}
-
-bool SwivelSensor::ensure_source()
-{
+    _source = hal.analogin->channel(ANALOG_INPUT_NONE);
     if (_source == nullptr) {
-        _source = hal.analogin->channel(ANALOG_INPUT_NONE);
-        if (_source == nullptr) {
-            _voltage_valid = false;
-            _configured_pin = -1;
-            return false;
-        }
+        reset_state();
+        return;
     }
 
-    const int8_t desired_pin = _pin;
-    if (_configured_pin != desired_pin) {
-        if (!_source->set_pin(desired_pin)) {
-            _voltage_valid = false;
-            _configured_pin = -1;
-            return false;
-        }
-        _configured_pin = desired_pin;
+    if (!_source->set_pin(_pin)) {
+        _source = nullptr;
+        reset_state();
+        return;
     }
 
-    return true;
+    reset_state();
 }
 
-void SwivelSensor::update()
+bool SwivelSensor::sample(uint32_t now_us, float &voltage, float &rate_vps)
 {
-    if (!enabled()) {
-        _voltage_valid = false;
-        return;
-    }
-
-    if (!ensure_source()) {
-        _voltage_valid = false;
-        return;
-    }
-
-    const float voltage = _source->voltage_average();
-    if (!isfinite(voltage)) {
-        _voltage_valid = false;
-        return;
-    }
-
-    _voltage = voltage;
-    _voltage_valid = true;
-}
-
-bool SwivelSensor::get_voltage(float &voltage) const
-{
-    if (!_voltage_valid) {
+    if (!enabled() || _source == nullptr) {
+        reset_state();
         return false;
     }
-    voltage = _voltage;
+
+    const float new_voltage = _source->voltage_average();
+    if (!isfinite(new_voltage)) {
+        reset_state();
+        return false;
+    }
+
+    float new_rate_vps = 0.0f;
+    if (_have_sample && now_us > _last_sample_us) {
+        const float dt = (now_us - _last_sample_us) * 1.0e-6f;
+        new_rate_vps = (new_voltage - _last_voltage) / dt;
+    }
+
+    _last_voltage = new_voltage;
+    _last_sample_us = now_us;
+    _have_sample = true;
+
+    voltage = new_voltage;
+    rate_vps = new_rate_vps;
     return true;
 }
 
 void AP_Periph_FW::can_swivel_update()
 {
-    swivel.update();
+    const uint32_t now_us = AP_HAL::micros();
 
-    if (!swivel.enabled()) {
+    float voltage = 0.0f;
+    float rate_vps = 0.0f;
+    if (!swivel.sample(now_us, voltage, rate_vps)) {
         return;
     }
 
     static uint32_t last_publish_ms;
-    const uint32_t now = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
     const uint32_t rate_hz = swivel.get_rate_hz();
     const uint32_t interval_ms = MAX<uint32_t>(1U, 1000U / MAX<uint32_t>(1U, rate_hz));
 
-    if ((now - last_publish_ms) < interval_ms) {
+    if ((now_ms - last_publish_ms) < interval_ms) {
         return;
     }
-
-    float voltage = 0.0f;
-    if (!swivel.get_voltage(voltage)) {
-        return;
-    }
-
-    last_publish_ms = now;
+    last_publish_ms = now_ms;
 
     uavcan_equipment_actuator_Status pkt {};
     pkt.actuator_id = swivel.get_sensor_id();
-    pkt.position = voltage;
-    pkt.speed = NAN;
+    pkt.position = voltage;   // raw volts
+    pkt.speed = rate_vps;     // volts/sec
     pkt.force = NAN;
     pkt.power_rating_pct = UAVCAN_EQUIPMENT_ACTUATOR_STATUS_POWER_RATING_PCT_UNKNOWN;
 

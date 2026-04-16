@@ -20,7 +20,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     void init();
-    void update();
 
     bool enabled() const;
     bool healthy() const;
@@ -29,16 +28,10 @@ public:
     bool get_rate(float &rate_value) const;
     bool get_raw_voltage(float &voltage) const;
 
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_Swivel *get_singleton() { return _singleton; }
 
 private:
-    struct RxState {
-        float raw_voltage = 0.0f;
-        uint32_t sample_ms = 0;
-        bool new_sample = false;
-    };
-
     struct State {
         float raw_voltage = 0.0f;
         float angle_rad = 0.0f;
@@ -51,13 +44,18 @@ private:
                                        const CanardRxTransfer& transfer,
                                        const uavcan_equipment_actuator_Status &msg);
 
-    void handle_voltage_sample(uint8_t sensor_id, float voltage, uint32_t now_ms);
+    void handle_feedback_sample(uint8_t sensor_id,
+                                float voltage,
+                                float voltage_rate,
+                                uint32_t now_ms);
+
     float map_voltage_to_angle(float voltage) const;
+    float map_voltage_rate_to_angle_rate(float voltage_rate) const;
+    bool timed_out(uint32_t now_ms) const;
 
     AP_Swivel_Params _params;
     mutable HAL_Semaphore _sem;
-    RxState _rx {};
-    State _state {};
+    mutable State _state {};
 
     static AP_Swivel *_singleton;
 };

@@ -59,7 +59,6 @@ public:
     float get_swivel_steering() const { return _swivel_steering; }
     float get_swivel_actual() const { return _actual_swivel_angle; }
     float get_swivel_desired() const { return _desired_swivel_angle; }
-    float get_swivel_trim() const { return _swivel_trim; }
 
     // get or set roll as a value from -1 to 1
     float get_roll() const { return _roll; }
@@ -240,7 +239,6 @@ private:
     float   _swivel_steering;
     float   _actual_swivel_angle;     // current angle of the swivel in radians
     float   _desired_swivel_angle;    // desired angle of the swivel in radians
-    float   _swivel_trim;
     float   _throttle_prev; // throttle input from previous iteration
     float   _throttle_limit = 1.0f;  // used for current limiting
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
