@@ -119,12 +119,6 @@ void AP_Mission::start()
     }
 }
 
-void AP_Mission::start_stream()
-{
-    _flags.state = MISSION_RUNNING;
-    reset();
-}
-
 /// stop - stops mission execution.  subsequent calls to update() will have no effect until the mission is started or resumed
 void AP_Mission::stop()
 {
@@ -297,7 +291,6 @@ bool AP_Mission::clear()
     _flags.nav_cmd_loaded = false;
     _flags.do_cmd_loaded = false;
     _flags.state = MISSION_STOPPED;
-    _popped = 0;
     // return success
     return true;
 }
@@ -362,26 +355,6 @@ void AP_Mission::update()
         if (verify_command(_do_cmd)) {
             // mark _do_cmd as complete
             _flags.do_cmd_loaded = false;
-        }
-    }
-}
-
-/// update - ensures the command queues are loaded with the next command and calls main programs command_init and command_verify functions to progress the mission
-///     should be called at 10hz or higher
-void AP_Mission::update_stream()
-{
-    Mission_Command cmd;
-    if (!get_next_cmd(AP_MISSION_FIRST_REAL_COMMAND, cmd, true)) {
-        return;
-    }
-    if (!_flags.nav_cmd_loaded) {
-        if (start_command(cmd)) {
-            _flags.nav_cmd_loaded = true;
-        }
-    } else {        
-        if (verify_command(cmd)) {
-            pop_cmd();
-            _flags.nav_cmd_loaded = false;
         }
     }
 }
@@ -1022,37 +995,6 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
     return true;
 }
 
-bool AP_Mission::pop_cmd() {
-
-    WITH_SEMAPHORE(_rsem);
-
-    const uint16_t total = _cmd_total;
-    // if there are no commands left, nothing to pop
-    if (total <= AP_MISSION_FIRST_REAL_COMMAND) {
-        return false;
-    }
-
-    const uint16_t record_size = AP_MISSION_EEPROM_COMMAND_SIZE;
-
-    // slide commands [1…total−1] down to [0…total−2]
-    for (uint16_t i = AP_MISSION_FIRST_REAL_COMMAND; i + 1 < total; ++i) {
-        const uint16_t src = 4 + ((i + 1) * record_size);
-        const uint16_t dst = 4 + (i * record_size);
-        uint8_t buf[record_size];
-        _storage.read_block(buf, src, record_size);
-        _storage.write_block(dst, buf, record_size);
-    }
-
-    // drop the final slot by decrementing command count
-    _cmd_total.set_and_save(total - 1);
-
-    _last_change_time_ms = AP_HAL::millis();
-    _popped++;
-    return true;   // we did pop one
-}
-
-
-
 /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
 ///     home is taken directly from ahrs
 void AP_Mission::write_home_to_storage()
@@ -1158,11 +1100,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = (passby << 8) | (acp & 0x00FF);
 #else
         // delay at waypoint in seconds (this is for copters???)
-        float speed_ms_f = packet.param2;
-        uint16_t speed = (uint16_t)roundf(speed_ms_f * 100.0f); 
-        speed = MIN(speed, 0x7FFF); 
-        bool reverse = (packet.param3 > 0);
-        cmd.p1 = (reverse ? 0x8000 : 0) | (speed & 0x7FFF);
+        // reject invalid param1 values to prevent floating point exception
+        if (packet.param1 < 0 || packet.param1 > UINT16_MAX) {
+            return MAV_MISSION_INVALID_PARAM1;
+        }
+        cmd.p1 = (uint16_t)packet.param1;
 #endif
     }
     break;

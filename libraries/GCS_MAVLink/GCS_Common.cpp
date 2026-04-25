@@ -5941,7 +5941,7 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
         AP_Mission *mission = AP::mission();
         if (mission != nullptr) {
-            send_mission_current(*mission, mission->pop_count());
+            send_mission_current(*mission, mission->get_current_nav_index());
         }
         break;
     }

@@ -515,11 +515,6 @@ public:
     uint16_t num_commands_max() const {
         return _commands_max;
     }
-    
-    uint16_t pop_count() const
-    {
-        return _popped;
-    }
 
     // Present - returns true if there is a mission currently loaded, ignoring home which is stored in index 0
     bool present() const { return _cmd_total > 1; }
@@ -527,8 +522,6 @@ public:
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
     void start();
-
-    void start_stream();
 
     /// stop - stops mission execution.  subsequent calls to update() will have no effect until the mission is started or resumed
     void stop();
@@ -559,10 +552,6 @@ public:
     ///
     /// public command methods
     ///
-
-    void update_stream();
-
-    bool pop_cmd();
 
     /// add_cmd - adds a command to the end of the command list and writes to storage
     ///     returns true if successfully added, false on failure
@@ -942,7 +931,6 @@ private:
 
     // maximum number of commands that will fit in storage
     uint16_t _commands_max;
-    uint16_t _popped;
 
 #if AP_SDCARD_STORAGE_ENABLED
     bool _failed_sdcard_storage;

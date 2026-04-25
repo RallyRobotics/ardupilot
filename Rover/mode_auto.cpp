@@ -5,10 +5,10 @@
 bool ModeAuto::_enter()
 {
     // fail to enter auto if no mission commands
-    // if (mission.num_commands() <= 1) {
-    //     gcs().send_text(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
-    //     return false;
-    // }
+    if (!mission.present()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
+        return false;
+    }
 
     // initialise waypoint navigation library
     g2.wp_nav.init();
@@ -56,11 +56,27 @@ void ModeAuto::update()
         Location loc;
         if (ahrs.get_origin(loc)) {
             // start/resume the mission (based on MIS_RESTART parameter)
-            mission.start_stream();
+            mission.start_or_resume();
             waiting_to_start = false;
+
+            // initialise mission change check
+            IGNORE_RETURN(mis_change_detector.check_for_mission_change());
         }
     } else {
-        mission.update_stream();
+        // check for mission changes
+        if (mis_change_detector.check_for_mission_change()) {
+            // if mission is running restart the current command if it is a waypoint command
+            if ((mission.state() == AP_Mission::MISSION_RUNNING) && (_submode == SubMode::WP)) {
+                if (mission.restart_current_nav_cmd()) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Auto mission changed, restarted command");
+                } else {
+                    // failed to restart mission for some reason
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Auto mission changed but failed to restart command");
+                }
+            }
+        }
+
+        mission.update();
     }
 
     switch (_submode) {
@@ -715,27 +731,17 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     Location cmdloc = cmd.content.location;
     cmdloc.sanitize(rover.current_loc);
 
-    // Extract reverse flag (bit 15)
-    bool reverse = cmd.p1 & 0x8000;
-    set_reversed(reverse);
-    // Extract speed in cm/s (bits 0–14)
-    uint16_t speed_cm_s = cmd.p1 & 0x7FFF;
-    float speed_m_s = speed_cm_s / 100.0f;
-    if (!is_zero(speed_m_s)) {
-        set_desired_speed(speed_m_s);
+    // delayed stored in p1 in seconds
+    loiter_duration = ((int16_t) cmd.p1 < 0) ? 0 : cmd.p1;
+    loiter_start_time = 0;
+    if (loiter_duration > 0) {
+        always_stop_at_destination = true;
     }
 
-    bool stop_required = true;
+    // do not add next wp if there are no more navigation commands
     AP_Mission::Mission_Command next_cmd;
-    if (mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
-        bool next_reverse = next_cmd.p1 & 0x8000;
-        if (reverse == next_reverse) {
-            // We have a next cmd and its the same direction as current 
-            stop_required = false;
-        }
-    }
-
-    if (always_stop_at_destination || stop_required) {
+    if (always_stop_at_destination || !mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
+        // single destination
         if (!set_desired_location(cmdloc)) {
             return false;
         }
