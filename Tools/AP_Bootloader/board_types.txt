@@ -549,6 +549,7 @@ AP_HW_VIMDRONES_BMS                  5820
 # Rally Robotics
 AP_HW_RallySwivel                    5900
 AP_HW_RallyAuxBox                    5901
+AP_HW_RallyFC                        5902
 
 # IDs 6000-6099 reserved for SpektreWorks
 AP_HW_sw-spar-f407                   6000

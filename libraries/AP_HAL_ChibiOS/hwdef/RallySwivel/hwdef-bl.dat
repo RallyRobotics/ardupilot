@@ -1,4 +1,4 @@
-# hw definition file for AuxBox
+# hw definition file for RallySwivel
 
 # MCU class and specific type
 MCU STM32L431 STM32L431xx
