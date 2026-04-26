@@ -331,6 +331,10 @@ void AP_Periph_FW::init()
     ballbay.init();
 #endif
 
+#if AP_PERIPH_STOPBUTTON_ENABLED
+    stopbutton.init();
+#endif
+
     start_ms = AP_HAL::millis();
 }
 

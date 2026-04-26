@@ -333,6 +333,10 @@ public:
     AP_BallBay ballbay;
 #endif
 
+#if AP_STOPBUTTON_ENABLED
+    AP_StopButton stopbutton;
+#endif
+
     // default speed for rtl
     AP_Float rtl_speed;
 

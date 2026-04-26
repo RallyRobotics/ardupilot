@@ -51,6 +51,9 @@
 #if AP_PERIPH_BALLBAY_ENABLED
 #include "ballbay.h"
 #endif
+#if AP_PERIPH_STOPBUTTON_ENABLED
+#include "stopbutton.h"
+#endif
 #if AP_SIM_ENABLED
 #include <SITL/SITL.h>
 #endif
@@ -207,6 +210,9 @@ public:
     void can_ballbay_update();
     void ballbay_srv_unitless(const uint8_t actuator_id, const float command_value);
 #endif
+#if AP_PERIPH_STOPBUTTON_ENABLED
+    void can_stopbutton_update();
+#endif
     void can_buzzer_update(void);
     void can_safety_button_update(void);
     void can_safety_LED_update(void);
@@ -337,6 +343,10 @@ public:
 
 #if AP_PERIPH_BALLBAY_ENABLED
     BallBay ballbay;
+#endif
+
+#if AP_PERIPH_STOPBUTTON_ENABLED
+    StopButton stopbutton;
 #endif
 
 #if AP_PERIPH_PWM_HARDPOINT_ENABLED

@@ -67,11 +67,18 @@ define AP_PERIPH_RELAY_ENABLED 1
 define AP_RELAY_ENABLED 1
 
 # ----------------------------------------------------------------------
+# STOP BUTTON
+# ----------------------------------------------------------------------
+PC10 STOP_BUTTON INPUT FLOATING
+define HAL_STOP_BUTTON_ON 1
+define AP_PERIPH_STOPBUTTON_ENABLED 1
+
+# ----------------------------------------------------------------------
 # STEPPER GPIO
 # ----------------------------------------------------------------------
-PD2  STEPPER_ENN OUTPUT   HIGH GPIO(2)
-PC11 STEPPER_HOME INPUT   FLOATING GPIO(3)
-PC12 STEPPER_DIAG INPUT   FLOATING GPIO(4)
+PD2  STEPPER_ENN  OUTPUT HIGH GPIO(2)
+PC11 STEPPER_HOME INPUT  FLOATING GPIO(3)
+PC12 STEPPER_DIAG INPUT  FLOATING GPIO(4)
 PB4  STEPPER_STEP OUTPUT LOW
 PB5  STEPPER_DIR  OUTPUT LOW
 

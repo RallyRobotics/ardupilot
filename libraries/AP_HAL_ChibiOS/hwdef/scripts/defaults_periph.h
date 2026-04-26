@@ -386,6 +386,9 @@
 #ifndef AP_PERIPH_BALLBAY_ENABLED
 #define AP_PERIPH_BALLBAY_ENABLED 0
 #endif
+#ifndef AP_PERIPH_STOPBUTTON_ENABLED
+#define AP_PERIPH_STOPBUTTON_ENABLED 0
+#endif
 /*
  * turning on of ArduPilot features based on which AP_Periph features
  * are enabled:

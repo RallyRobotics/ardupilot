@@ -62,6 +62,7 @@
 
 #include <AP_Swivel/AP_Swivel.h>
 #include <AP_BallBay/AP_BallBay.h>
+#include <AP_StopButton/AP_StopButton.h>
 
 #include <AP_TemperatureSensor/AP_TemperatureSensor_DroneCAN.h>
 
@@ -412,6 +413,10 @@ void AP_DroneCAN::init(uint8_t driver_index)
 
 #if AP_BALLBAY_ENABLED
     subscribed = subscribed && AP_BallBay::subscribe_msgs(this);
+#endif
+
+#if AP_STOPBUTTON_ENABLED
+    subscribed = subscribed && AP_StopButton::subscribe_msgs(this);
 #endif
 
 #if AP_TEMPERATURE_SENSOR_DRONECAN_ENABLED

@@ -43,8 +43,9 @@ public:
     bool enabled() const { return _enable.get() != 0; }
     bool initialized() const { return _init_ok; }
 
-    uint8_t get_actuator_id() const;
-
+    uint8_t get_actuator_id() const { return MAX((uint8_t)0, _actuator_id.get()); }
+    uint16_t get_report_rate_hz() const { return MAX((int16_t)1, _report_rate_hz.get()); }
+    
     bool handle_unitless_command(float value);
 
     float get_report_position() const;
@@ -77,6 +78,7 @@ private:
     // parameters
     AP_Int8  _enable;
     AP_Int8  _actuator_id;
+    AP_Int16 _report_rate_hz;
     AP_Int16 _max_steps;
     AP_Int16 _start_sps;
     AP_Int16 _vmax_sps;

@@ -169,7 +169,9 @@ bool AP_BallBay::subscribe_msgs(AP_DroneCAN *ap_dronecan)
 {
     const auto driver_index = ap_dronecan->get_driver_index();
 
-    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_ballbay_feedback, driver_index) != nullptr);
+    return (Canard::allocate_sub_arg_callback(ap_dronecan,
+                                              &handle_ballbay_feedback,
+                                              driver_index) != nullptr);
 }
 
 namespace AP {

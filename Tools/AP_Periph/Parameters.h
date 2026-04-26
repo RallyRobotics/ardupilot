@@ -93,6 +93,7 @@ public:
         k_param_relay,
         k_param_swivel,
         k_param_ballbay,
+        k_param_stopbutton,
         k_param_temperature_msg_rate,
         k_param_rangefinder_baud1,
         k_param_rangefinder_port1,

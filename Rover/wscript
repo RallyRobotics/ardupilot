@@ -23,6 +23,7 @@ def build(bld):
             'AP_IRLock',
             'AP_Swivel',
             'AP_BallBay',
+            'AP_StopButton',
         ],
     )
 

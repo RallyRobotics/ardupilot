@@ -12,23 +12,24 @@ const AP_Param::GroupInfo BallBay::var_info[] = {
 
     AP_GROUPINFO_FLAGS("ENABLE",     1,  BallBay, _enable,           1, AP_PARAM_FLAG_ENABLE),
     AP_GROUPINFO("ACT_ID",           2,  BallBay, _actuator_id,      8),
-    AP_GROUPINFO("MAX_STEPS",        3,  BallBay, _max_steps,        24000),
-    AP_GROUPINFO("START_SPS",        4,  BallBay, _start_sps,        50),
-    AP_GROUPINFO("MOVE_VMAX",        5,  BallBay, _vmax_sps,         3000),
-    AP_GROUPINFO("MOVE_AMAX",        6,  BallBay, _amax_sps2,        1000),
-    AP_GROUPINFO("PULSE_US",         7,  BallBay, _pulse_us,         20),
-    AP_GROUPINFO("HOME_VMAX",        8,  BallBay, _home_sps,         480),
-    AP_GROUPINFO("HOME_AMAX",        9,  BallBay, _home_amax_sps2,   240),
-    AP_GROUPINFO("HOME_OFFS",        10, BallBay, _home_off,         800),
-    AP_GROUPINFO("HOME_TIME",        11, BallBay, _home_timeout_s,   60),
-    AP_GROUPINFO("HOLD_CURR",        12, BallBay, _tmc_ihold,        1),
-    AP_GROUPINFO("MOVE_CURR",        13, BallBay, _tmc_irun,         20),
-    AP_GROUPINFO("MICRO_STEP",       14, BallBay, _tmc_mstep,        8),
-    AP_GROUPINFO("V_SENSE",          15, BallBay, _tmc_vsense,       0),
-    AP_GROUPINFO("TPWM_THRS",        16, BallBay, _tmc_tpwmthrs,     0),
-    AP_GROUPINFO("TCOOL_THRS",       17, BallBay, _tmc_tcoolthrs,    200),
-    AP_GROUPINFO("SG_THRS",          18, BallBay, _tmc_sgthrs,       50),
-    AP_GROUPINFO("FILTER_HZ",        19, BallBay, _load_filt_hz,     0.2f),
+    AP_GROUPINFO("TELEM_RATE",       3,  BallBay, _report_rate_hz,   10),
+    AP_GROUPINFO("MAX_STEPS",        4,  BallBay, _max_steps,        24000),
+    AP_GROUPINFO("START_SPS",        5,  BallBay, _start_sps,        50),
+    AP_GROUPINFO("MOVE_VMAX",        6,  BallBay, _vmax_sps,         3000),
+    AP_GROUPINFO("MOVE_AMAX",        7,  BallBay, _amax_sps2,        1000),
+    AP_GROUPINFO("PULSE_US",         8,  BallBay, _pulse_us,         20),
+    AP_GROUPINFO("HOME_VMAX",        9,  BallBay, _home_sps,         480),
+    AP_GROUPINFO("HOME_AMAX",        10, BallBay, _home_amax_sps2,   240),
+    AP_GROUPINFO("HOME_OFFS",        11, BallBay, _home_off,         800),
+    AP_GROUPINFO("HOME_TIME",        12, BallBay, _home_timeout_s,   60),
+    AP_GROUPINFO("HOLD_CURR",        13, BallBay, _tmc_ihold,        1),
+    AP_GROUPINFO("MOVE_CURR",        14, BallBay, _tmc_irun,         20),
+    AP_GROUPINFO("MICRO_STEP",       15, BallBay, _tmc_mstep,        8),
+    AP_GROUPINFO("V_SENSE",          16, BallBay, _tmc_vsense,       0),
+    AP_GROUPINFO("TPWM_THRS",        17, BallBay, _tmc_tpwmthrs,     0),
+    AP_GROUPINFO("TCOOL_THRS",       18, BallBay, _tmc_tcoolthrs,    200),
+    AP_GROUPINFO("SG_THRS",          19, BallBay, _tmc_sgthrs,       50),
+    AP_GROUPINFO("FILTER_HZ",        20, BallBay, _load_filt_hz,     0.2f),
 
     AP_GROUPEND
 };
@@ -41,15 +42,6 @@ BallBay::BallBay()
         AP_HAL::panic("BallBay must be singleton");
     }
     _singleton = this;
-}
-
-uint8_t BallBay::get_actuator_id() const
-{
-    int16_t id = _actuator_id.get();
-    if (id < 0) {
-        id = 0;
-    }
-    return uint8_t(id);
 }
 
 void BallBay::init()
@@ -584,18 +576,26 @@ void BallBay::diag_irq_handler()
 void AP_Periph_FW::can_ballbay_update()
 {
     static uint32_t last_update_ms;
+    static uint32_t last_publish_ms;
 
     const uint32_t now = AP_HAL::millis();
-    if ((now - last_update_ms) < 20U) {
-        return;
-    }
-    last_update_ms = now;
 
-    ballbay.update();
+    if ((now - last_update_ms) >= 20U) {
+        last_update_ms = now;
+        ballbay.update();
+    }
 
     if (!ballbay.enabled() || !ballbay.initialized()) {
         return;
     }
+
+    const uint32_t rate_hz = ballbay.get_report_rate_hz();
+    const uint32_t interval_ms = MAX<uint32_t>(1U, 1000U / MAX<uint32_t>(1U, rate_hz));
+
+    if ((now - last_publish_ms) < interval_ms) {
+        return;
+    }
+    last_publish_ms = now;
 
     uavcan_equipment_actuator_Status pkt {};
     pkt.actuator_id = ballbay.get_actuator_id();

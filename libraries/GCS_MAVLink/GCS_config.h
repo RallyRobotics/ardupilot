@@ -8,6 +8,7 @@
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
 #include <AP_Swivel/AP_Swivel_config.h>
 #include <AP_BallBay/AP_BallBay_config.h>
+#include <AP_StopButton/AP_StopButton_config.h>
 
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 1

@@ -650,6 +650,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(ballbay, "BBAY", 60, ParametersG2, AP_BallBay),
 #endif
 
+#if AP_STOPBUTTON_ENABLED
+    // @Group: STPBTN
+    // @Path: ../libraries/AP_StopButton/AP_StopButton.cpp
+    AP_SUBGROUPINFO(stopbutton, "STPBTN", 61, ParametersG2, AP_StopButton),
+#endif
+
     AP_GROUPEND
 };
 
@@ -701,6 +707,9 @@ ParametersG2::ParametersG2(void)
 #endif
 #if AP_BALLBAY_ENABLED
     ballbay(),
+#endif
+#if AP_STOPBUTTON_ENABLED
+    stopbutton(),
 #endif
 #if HAL_PROXIMITY_ENABLED
     proximity(),

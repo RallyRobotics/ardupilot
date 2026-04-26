@@ -51,6 +51,10 @@ void Rover::init_ardupilot()
     g2.ballbay.init();
 #endif
 
+#if AP_STOPBUTTON_ENABLED
+    g2.stopbutton.init();
+#endif
+
 #if HAL_PROXIMITY_ENABLED
     // init proximity sensor
     g2.proximity.init();

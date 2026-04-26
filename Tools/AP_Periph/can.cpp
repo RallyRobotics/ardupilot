@@ -1981,6 +1981,9 @@ void AP_Periph_FW::can_update()
 #if AP_PERIPH_BALLBAY_ENABLED
         can_ballbay_update();
 #endif
+#if AP_PERIPH_STOPBUTTON_ENABLED
+    can_stopbutton_update();
+#endif
     #if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
         can_buzzer_update();
     #endif

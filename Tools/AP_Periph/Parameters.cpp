@@ -687,6 +687,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(ballbay,               "BAY_", BallBay),
 #endif
 
+#if AP_PERIPH_STOPBUTTON_ENABLED
+    // @Group: STPBTN_
+    // @Path: stopbutton.cpp
+    GOBJECT(stopbutton,               "STPBTN_", StopButton),
+#endif
+
 #if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
     // @Param: TEMP_MSG_RATE
     // @DisplayName: Temperature sensor message rate

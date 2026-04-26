@@ -203,7 +203,7 @@ void GCS_MAVLINK_Rover::send_water_depth()
 }
 #endif  // AP_RANGEFINDER_ENABLED
 
-#if AP_SWIVEL_ENABLED || AP_BALLBAY_ENABLED
+#if AP_SWIVEL_ENABLED || AP_BALLBAY_ENABLED || AP_STOPBUTTON_ENABLED
 void GCS_MAVLINK_Rover::send_actuator_output_status()
 {
     float actuator[32] = {};
@@ -248,14 +248,14 @@ void GCS_MAVLINK_Rover::send_actuator_output_status()
 
         float ballbay_speed;
         if (rover.g2.ballbay.get_speed(ballbay_speed)) {
-            actuator[7] = ballbay_speed;
-            active |= (1U << 7);
+            actuator[6] = ballbay_speed;
+            active |= (1U << 6);
         }
         
         float ballbay_position;
         if (rover.g2.ballbay.get_position(ballbay_position)) {
-            actuator[6] = ballbay_position;
-            active |= (1U << 6);
+            actuator[7] = ballbay_position;
+            active |= (1U << 7);
         }
         
         float ballbay_force;
@@ -266,6 +266,20 @@ void GCS_MAVLINK_Rover::send_actuator_output_status()
     }
         
 #endif // AP_BALLBAY_ENABLED
+
+#if AP_STOPBUTTON_ENABLED
+
+    if (rover.g2.stopbutton.healthy()) {
+
+        bool is_engaged;
+        if (rover.g2.stopbutton.get_engaged(is_engaged)) {
+            actuator[9] = is_engaged ? 1.0f : 0.0f;
+            active |= (1U << 9);
+        }
+        
+    }
+        
+#endif // AP_STOPBUTTON_ENABLED
 
     mavlink_msg_actuator_output_status_send(
         chan,
@@ -483,7 +497,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         break;
 #endif  // AP_RANGEFINDER_ENABLED
 
-#if AP_SWIVEL_ENABLED || AP_BALLBAY_ENABLED
+#if AP_SWIVEL_ENABLED || AP_BALLBAY_ENABLED || AP_STOPBUTTON_ENABLED
     case MSG_ACTUATOR_OUTPUT_STATUS:
         CHECK_PAYLOAD_SIZE(ACTUATOR_OUTPUT_STATUS);
         send_actuator_output_status();

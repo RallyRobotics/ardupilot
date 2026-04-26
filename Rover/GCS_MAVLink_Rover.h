@@ -72,7 +72,7 @@ private:
     uint8_t last_WATER_DEPTH_index;
 #endif
 
-#if AP_SWIVEL_ENABLED || AP_BALLBAY_ENABLED
+#if AP_SWIVEL_ENABLED || AP_BALLBAY_ENABLED || AP_STOPBUTTON_ENABLED
     void send_actuator_output_status();
 #endif
 
