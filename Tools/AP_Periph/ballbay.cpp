@@ -171,6 +171,18 @@ void BallBay::update()
         }
     }
 
+    if (!hal.util->get_soft_armed()) {
+        chSysLock();
+        _input_value = COMMAND_INACTIVE;
+        _homing_command_latched = false;
+        chSysUnlock();
+
+        if (_state.mode != Mode::INACTIVE) {
+            enter_inactive();
+        }
+        return;
+    }
+
     if (_stall_latched && _state.mode != Mode::INACTIVE) {
         enter_inactive();
         return;

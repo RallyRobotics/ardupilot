@@ -12,6 +12,7 @@
 #include <AP_Swivel/AP_Swivel.h>
 #include <AP_Swivel/AP_SwivelControl.h>
 #include <AP_BallBay/AP_BallBay.h>
+#include <AP_StopButton/AP_StopButton.h>
 #include "AP_Rally.h"
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_Stats/AP_Stats.h>

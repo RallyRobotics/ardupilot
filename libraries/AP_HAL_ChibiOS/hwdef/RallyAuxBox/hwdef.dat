@@ -57,6 +57,7 @@ PA14 JTCK-SWCLK SWD
 PA3 TIM2_CH4 TIM2 PWM(1)
 define HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY 0
 define HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY 16
+define AP_SERIALLED_ENABLED 1
 
 # ----------------------------------------------------------------------
 # HEADLIGHT RELAY

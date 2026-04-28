@@ -83,9 +83,15 @@ bool SwivelSensor::sample(uint32_t now_us, float &voltage, float &rate_vps)
     }
 
     float new_rate_vps = 0.0f;
-    if (_have_sample && now_us > _last_sample_us) {
-        const float dt = (now_us - _last_sample_us) * 1.0e-6f;
-        new_rate_vps = (new_voltage - _last_voltage) / dt;
+
+    if (_have_sample) {
+        // Unsigned subtraction handles normal uint32_t micros() rollover.
+        const uint32_t dt_us = now_us - _last_sample_us;
+
+        if (dt_us > 0) {
+            const float dt = dt_us * 1.0e-6f;
+            new_rate_vps = (new_voltage - _last_voltage) / dt;
+        }
     }
 
     _last_voltage = new_voltage;
@@ -94,27 +100,37 @@ bool SwivelSensor::sample(uint32_t now_us, float &voltage, float &rate_vps)
 
     voltage = new_voltage;
     rate_vps = new_rate_vps;
+
     return true;
 }
 
 void AP_Periph_FW::can_swivel_update()
 {
+    static uint32_t last_publish_ms;
+
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t rate_hz = swivel.get_rate_hz();
+
+    const uint32_t safe_rate_hz = MAX<uint32_t>(1U, rate_hz);
+    const uint32_t interval_ms = MAX<uint32_t>(1U, 1000U / safe_rate_hz);
+
+    // Important:
+    // Do not sample until it is actually time to publish.
+    // Otherwise the voltage delta is measured over the main loop period instead
+    // of the CAN publish period.
+    if ((now_ms - last_publish_ms) < interval_ms) {
+        return;
+    }
+
     const uint32_t now_us = AP_HAL::micros();
 
     float voltage = 0.0f;
     float rate_vps = 0.0f;
+
     if (!swivel.sample(now_us, voltage, rate_vps)) {
         return;
     }
 
-    static uint32_t last_publish_ms;
-    const uint32_t now_ms = AP_HAL::millis();
-    const uint32_t rate_hz = swivel.get_rate_hz();
-    const uint32_t interval_ms = MAX<uint32_t>(1U, 1000U / MAX<uint32_t>(1U, rate_hz));
-
-    if ((now_ms - last_publish_ms) < interval_ms) {
-        return;
-    }
     last_publish_ms = now_ms;
 
     uavcan_equipment_actuator_Status pkt {};
