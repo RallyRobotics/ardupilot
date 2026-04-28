@@ -383,7 +383,7 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float desired_speed, f
                 if (fabsf(ground_speed) > 0.25f) {
                     current_speed = ground_speed;
                 }
-                desired_swivel_angle = atanf((desired_turn_rate * 0.775) / current_speed);
+                desired_swivel_angle = atanf((desired_turn_rate * _swivel_controller.get_wheelbase()) / current_speed);
 
             } else if (!is_zero(desired_turn_rate)) {
                 desired_swivel_angle = is_positive(desired_turn_rate) ? vector_angle_max_rad : -vector_angle_max_rad;

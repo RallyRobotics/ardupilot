@@ -42,6 +42,9 @@ public:
     // Returns true if SwivelControl is enabled
     bool enabled();
 
+    // get swivel wheelbase in meters
+    float get_wheelbase() const { return MAX(_wheelbase, 0.1f); }
+
     // Returns the steering output required to achieve desired Swivel angle
     float get_swivel_position_correction(float target, float &throttle, float dt);
 
